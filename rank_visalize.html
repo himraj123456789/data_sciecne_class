@@ -1,0 +1,416 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Matrix Rank - Interactive Geometry Lab</title>
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;background:#080f1e;color:#eef4ff;
+ font-family:Arial,sans-serif
+}
+header{
+ padding:24px 12px;text-align:center;
+ background:linear-gradient(120deg,#13365c,#42205e)
+}
+h1{margin:0;font-size:27px}
+header p{color:#c5d7ee}
+main{max-width:1250px;margin:auto;padding:18px}
+.layout{
+ display:grid;grid-template-columns:1.5fr 1fr;gap:16px
+}
+.panel{
+ background:#111e33;border:1px solid #30445f;
+ border-radius:15px;padding:17px;margin-bottom:15px
+}
+h3{margin-top:0;color:#7dd3fc}
+canvas{
+ width:100%;height:450px;display:block;
+ background:#091426;border-radius:12px;
+ cursor:grab
+}
+.matrix{
+ display:grid;grid-template-columns:repeat(3,1fr);
+ gap:9px;margin:15px 0
+}
+input[type=number]{
+ width:100%;padding:12px 3px;
+ background:#081529;border:1px solid #486080;
+ color:white;border-radius:8px;text-align:center;
+ font-size:17px
+}
+button{
+ border:0;border-radius:8px;padding:11px 13px;
+ margin:4px;background:#2563eb;color:white;
+ font-weight:bold;cursor:pointer
+}
+button:hover{filter:brightness(1.2)}
+.green{background:#059669}
+.purple{background:#7c3aed}
+.orange{background:#d97706}
+.gray{background:#475569}
+.metric{
+ padding:15px;text-align:center;
+ background:#091529;border-radius:10px;margin:12px 0
+}
+.big{font-size:36px;font-weight:bold;color:#4ade80}
+.formula{
+ background:#091529;border-radius:10px;
+ padding:14px;text-align:center;line-height:2;
+ font-size:18px;margin:12px 0
+}
+.status{
+ background:#192d48;padding:13px;
+ border-radius:10px;line-height:1.6;color:#c9ddf4
+}
+.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px}
+.dot{
+ width:10px;height:10px;display:inline-block;
+ border-radius:50%;margin-right:5px
+}
+.cards{
+ display:grid;grid-template-columns:repeat(4,1fr);gap:10px
+}
+.card{
+ padding:15px;background:#192a44;border-radius:10px;
+ text-align:center;line-height:1.5
+}
+.card strong{display:block;color:#7dd3fc;margin-bottom:8px}
+@media(max-width:850px){
+ .layout{grid-template-columns:1fr}
+ .cards{grid-template-columns:repeat(2,1fr)}
+ canvas{height:360px}
+}
+</style>
+</head>
+
+<body>
+<header>
+<h1>🧊 MATRIX RANK VISUALIZER</h1>
+<p>See how independent dimensions determine the rank of a matrix</p>
+</header>
+
+<main>
+<div class="layout">
+
+<section class="panel">
+<h3>🌍 3D Geometry Laboratory</h3>
+<div class="legend">
+<span><i class="dot" style="background:#38bdf8"></i>Original cube</span>
+<span><i class="dot" style="background:#f472b6"></i>Transformed shape</span>
+<span><i class="dot" style="background:#4ade80"></i>Basis vectors</span>
+</div>
+<canvas id="canvas"></canvas>
+<div class="status" id="explanation">
+A cube has three independent dimensions. Change the matrix to see what happens.
+</div>
+<p style="font-size:12px;color:#94a9c7">
+Drag the mouse to rotate the 3D view.
+</p>
+</section>
+
+<section class="panel">
+<h3>⚙️ Transformation Matrix A</h3>
+<p>Change the nine matrix elements:</p>
+
+<div class="matrix">
+<input id="a" type="number" value="1" step="0.5">
+<input id="b" type="number" value="0" step="0.5">
+<input id="c" type="number" value="0" step="0.5">
+<input id="d" type="number" value="0" step="0.5">
+<input id="e" type="number" value="1" step="0.5">
+<input id="f" type="number" value="0" step="0.5">
+<input id="g" type="number" value="0" step="0.5">
+<input id="h" type="number" value="0" step="0.5">
+<input id="i" type="number" value="1" step="0.5">
+</div>
+
+<button onclick="calculate()">Calculate Rank</button>
+<button class="gray" onclick="preset(3)">Rank 3</button>
+<button class="orange" onclick="preset(2)">Rank 2</button>
+<button class="purple" onclick="preset(1)">Rank 1</button>
+<button class="green" onclick="preset(0)">Rank 0</button>
+
+<div class="metric">
+<div>RANK OF MATRIX</div>
+<div class="big" id="rank">3</div>
+<div id="rankName">Full rank: Three dimensions</div>
+</div>
+
+<div class="formula" id="matrixDisplay">
+A = [ 1 0 0 ]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;[ 0 1 0 ]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;[ 0 0 1 ]
+</div>
+
+<div class="formula">
+Number of independent dimensions =
+<b id="dimensions">3</b>
+</div>
+</section>
+</div>
+
+<section class="panel">
+<h3>📊 What does each rank look like?</h3>
+<div class="cards">
+<div class="card">
+<strong>Rank 3</strong>
+3D cube / volume
+<br><span style="color:#4ade80">Full space</span>
+</div>
+<div class="card">
+<strong>Rank 2</strong>
+Flat plane
+<br><span style="color:#fbbf24">2D space</span>
+</div>
+<div class="card">
+<strong>Rank 1</strong>
+Straight line
+<br><span style="color:#f472b6">1D space</span>
+</div>
+<div class="card">
+<strong>Rank 0</strong>
+Single point
+<br><span style="color:#94a3b8">Zero space</span>
+</div>
+</div>
+</section>
+
+<section class="panel">
+<h3>🧠 Why does this happen?</h3>
+<div class="formula" id="reason">
+All three columns are independent. The cube remains three-dimensional.
+</div>
+<p class="status">
+Remember: Rank is the number of linearly independent columns (or rows).
+Geometrically, it is the dimension of the space spanned by the transformed basis vectors.
+</p>
+</section>
+</main>
+
+<script>
+const canvas=document.getElementById("canvas");
+const ctx=canvas.getContext("2d");
+
+let M=[1,0,0,0,1,0,0,0,1];
+let angleX=-0.45,angleY=0.65;
+let dragging=false,lastX=0,lastY=0;
+
+const ids=["a","b","c","d","e","f","g","h","i"];
+
+function resize(){
+ const r=canvas.getBoundingClientRect();
+ const d=window.devicePixelRatio||1;
+ canvas.width=r.width*d;
+ canvas.height=r.height*d;
+ ctx.setTransform(d,0,0,d,0,0);
+ draw();
+}
+
+function rankOf(mat){
+ let a=[
+ [mat[0],mat[1],mat[2]],
+ [mat[3],mat[4],mat[5]],
+ [mat[6],mat[7],mat[8]]
+ ];
+ let r=0;
+ const eps=1e-8;
+
+ for(let col=0;col<3;col++){
+  let pivot=r;
+  for(let j=r+1;j<3;j++){
+   if(Math.abs(a[j][col])>Math.abs(a[pivot][col]))
+    pivot=j;
+  }
+  if(r>=3 || Math.abs(a[pivot][col])<eps)continue;
+
+  [a[r],a[pivot]]=[a[pivot],a[r]];
+
+  let v=a[r][col];
+  for(let c=col;c<3;c++)a[r][c]/=v;
+
+  for(let j=0;j<3;j++){
+   if(j===r)continue;
+   let factor=a[j][col];
+   for(let c=col;c<3;c++)
+    a[j][c]-=factor*a[r][c];
+  }
+  r++;
+ }
+ return r;
+}
+
+function transform(p){
+ return [
+  M[0]*p[0]+M[1]*p[1]+M[2]*p[2],
+  M[3]*p[0]+M[4]*p[1]+M[5]*p[2],
+  M[6]*p[0]+M[7]*p[1]+M[8]*p[2]
+ ];
+}
+
+function project(p){
+ const cy=Math.cos(angleY),sy=Math.sin(angleY);
+ const cx=Math.cos(angleX),sx=Math.sin(angleX);
+
+ let x=p[0]*cy+p[2]*sy;
+ let z=-p[0]*sy+p[2]*cy;
+ let y=p[1]*cx-z*sx;
+ z=p[1]*sx+z*cx;
+
+ const scale=Math.min(canvas.clientWidth,canvas.clientHeight)*0.23;
+ return [
+ canvas.clientWidth/2+x*scale,
+ canvas.clientHeight/2-y*scale,
+ z
+ ];
+}
+
+function drawLine(p1,p2,color,width=2){
+ let a=project(p1),b=project(p2);
+ ctx.beginPath();
+ ctx.moveTo(a[0],a[1]);
+ ctx.lineTo(b[0],b[1]);
+ ctx.strokeStyle=color;
+ ctx.lineWidth=width;
+ ctx.stroke();
+}
+
+function draw(){
+ const w=canvas.clientWidth,h=canvas.clientHeight;
+ ctx.clearRect(0,0,w,h);
+
+ // 3D coordinate axes
+ const axis=2.3;
+ drawLine([-axis,0,0],[axis,0,0],"#64748b",1.5);
+ drawLine([0,-axis,0],[0,axis,0],"#64748b",1.5);
+ drawLine([0,0,-axis],[0,0,axis],"#64748b",1.5);
+
+ // Original cube vertices
+ const vertices=[];
+ for(let x=0;x<=1;x++)
+ for(let y=0;y<=1;y++)
+ for(let z=0;z<=1;z++)
+ vertices.push([x,y,z]);
+
+ // Cube edges
+ const edges=[
+ [0,4],[0,2],[0,1],
+ [1,5],[1,3],
+ [2,6],[2,3],
+ [3,7],[4,6],[4,5],
+ [5,7],[6,7]
+ ];
+
+ edges.forEach(([u,v])=>{
+  drawLine(vertices[u],vertices[v],"#38bdf8",1.5);
+ });
+
+ // Transformed cube edges
+ edges.forEach(([u,v])=>{
+  drawLine(transform(vertices[u]),transform(vertices[v]),"#f472b6",3);
+ });
+
+ // Basis vectors
+ const colors=["#4ade80","#fbbf24","#c084fc"];
+ const names=["e₁","e₂","e₃"];
+
+ for(let j=0;j<3;j++){
+  let end=transform([
+   j===0?1:0,
+   j===1?1:0,
+   j===2?1:0
+  ]);
+  drawLine([0,0,0],end,colors[j],4);
+  const p=project(end);
+  ctx.fillStyle=colors[j];
+  ctx.beginPath();ctx.arc(p[0],p[1],5,0,7);ctx.fill();
+  ctx.font="bold 14px Arial";
+  ctx.fillText(names[j],p[0]+8,p[1]-8);
+ }
+
+ // Transformed vertices
+ vertices.forEach(v=>{
+  let p=project(transform(v));
+  ctx.beginPath();
+  ctx.arc(p[0],p[1],3.5,0,7);
+  ctx.fillStyle="#f472b6";
+  ctx.fill();
+ });
+}
+
+function calculate(){
+ M=ids.map(id=>Number(document.getElementById(id).value)||0);
+
+ const r=rankOf(M);
+
+ document.getElementById("rank").textContent=r;
+ document.getElementById("dimensions").textContent=r;
+
+ const names=[
+ "Rank 0: Single point",
+ "Rank 1: Straight line",
+ "Rank 2: Flat plane",
+ "Rank 3: Three-dimensional space"
+ ];
+
+ document.getElementById("rankName").textContent=names[r];
+
+ document.getElementById("matrixDisplay").innerHTML=
+ `A = [ ${M[0]} &nbsp; ${M[1]} &nbsp; ${M[2]} ]<br>
+ &nbsp;&nbsp;&nbsp;&nbsp;[ ${M[3]} &nbsp; ${M[4]} &nbsp; ${M[5]} ]<br>
+ &nbsp;&nbsp;&nbsp;&nbsp;[ ${M[6]} &nbsp; ${M[7]} &nbsp; ${M[8]} ]`;
+
+ const explanations=[
+ "All columns are zero vectors. Every point maps to the origin. No independent direction remains.",
+ "Only one independent direction exists. All transformed vectors lie along the same straight line.",
+ "Two independent directions remain. The cube collapses into a plane, but the plane still has area.",
+ "All three columns are independent. The transformed cube retains nonzero volume."
+ ];
+
+ document.getElementById("reason").textContent=explanations[r];
+
+ document.getElementById("explanation").innerHTML=
+ "<b>Rank "+r+":</b> "+explanations[r];
+
+ draw();
+}
+
+function preset(r){
+ let values;
+ if(r===3)values=[1,0,0,0,1,0,0,0,1];
+ if(r===2)values=[1,0,0,0,1,0,0,0,0];
+ if(r===1)values=[1,2,3,2,4,6,3,6,9];
+ if(r===0)values=[0,0,0,0,0,0,0,0,0];
+
+ ids.forEach((id,i)=>{
+  document.getElementById(id).value=values[i];
+ });
+ calculate();
+}
+
+// Mouse rotation
+canvas.addEventListener("pointerdown",e=>{
+ dragging=true;
+ lastX=e.clientX;
+ lastY=e.clientY;
+ canvas.setPointerCapture(e.pointerId);
+});
+canvas.addEventListener("pointermove",e=>{
+ if(!dragging)return;
+ angleY+=(e.clientX-lastX)*0.008;
+ angleX+=(e.clientY-lastY)*0.008;
+ lastX=e.clientX;
+ lastY=e.clientY;
+ draw();
+});
+canvas.addEventListener("pointerup",()=>dragging=false);
+canvas.addEventListener("pointercancel",()=>dragging=false);
+
+window.addEventListener("resize",resize);
+calculate();
+resize();
+</script>
+</body>
+</html>
