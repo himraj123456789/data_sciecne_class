@@ -1,0 +1,303 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3D System of Linear Equations</title>
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;background:#0b1220;color:#edf3ff;
+ font-family:Arial,sans-serif;padding:20px
+}
+.container{max-width:1200px;margin:auto}
+h1{text-align:center}
+.sub{text-align:center;color:#aabbd3}
+.layout{display:grid;grid-template-columns:320px 1fr;gap:18px}
+.panel,.visual{
+ background:#162237;border:1px solid #31435f;
+ border-radius:15px;padding:18px
+}
+.eq{
+ background:#202e45;border-radius:10px;
+ padding:12px;margin:12px 0
+}
+.eq:nth-of-type(1){border-left:4px solid #39a9ff}
+.eq:nth-of-type(2){border-left:4px solid #ffad42}
+.eq:nth-of-type(3){border-left:4px solid #c084fc}
+.eq small{color:#b5c6dd}
+.fields{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
+label{font-size:11px;color:#bdcce0}
+input{
+ width:100%;padding:8px 2px;margin-top:4px;
+ background:#0b1424;color:white;border:1px solid #435774;
+ border-radius:6px;text-align:center;font-size:15px
+}
+button{
+ border:0;padding:10px 12px;margin:4px 2px;
+ background:#367ff0;color:white;border-radius:8px;
+ cursor:pointer;font-weight:bold
+}
+button.secondary{background:#394b67}
+button:hover{filter:brightness(1.15)}
+canvas{
+ display:block;width:100%;height:auto;
+ background:#091321;border-radius:10px;cursor:grab;
+ touch-action:pan-y
+}
+.result{
+ padding:14px;margin-top:14px;background:#0b1729;
+ border-radius:10px;line-height:1.8
+}
+.legend{display:flex;gap:15px;flex-wrap:wrap;margin:10px 0;font-size:13px}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px}
+.note{font-size:13px;color:#aabbd3;line-height:1.6}
+@media(max-width:850px){.layout{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>3D System of Linear Equations</h1>
+<p class="sub">Three equations = Three planes in 3D space</p>
+
+<div class="layout">
+<section class="panel">
+<h3>Enter three equations</h3>
+<p class="note">General form: ax + by + cz = d</p>
+
+<div id="equations"></div>
+
+<button onclick="solve()">Solve & Visualize</button>
+<button class="secondary" onclick="preset(1)">Unique solution</button>
+<button class="secondary" onclick="preset(2)">No solution</button>
+<button class="secondary" onclick="preset(3)">Infinite solutions</button>
+<button class="secondary" onclick="preset(4)">Another example</button>
+
+<div class="result" id="result"></div>
+
+<h3>Matrix form</h3>
+<div class="result" id="matrix"></div>
+</section>
+
+<section class="visual">
+<h3>3D Geometrical Visualization</h3>
+<div class="legend">
+<span><i class="dot" style="background:#39a9ff"></i>Plane 1</span>
+<span><i class="dot" style="background:#ffad42"></i>Plane 2</span>
+<span><i class="dot" style="background:#c084fc"></i>Plane 3</span>
+<span><i class="dot" style="background:#69e5a8"></i>Solution</span>
+</div>
+<canvas id="scene" width="850" height="620"></canvas>
+<p class="note">
+Drag the mouse to rotate the scene. Scroll to zoom.
+The green dot is the common intersection point.
+</p>
+</section>
+</div>
+</div>
+
+<script>
+const initial=[1,1,1,6, 1,-1,1,2, 1,1,-1,4];
+const colors=["#39a9ff","#ffad42","#c084fc"];
+const names=["Plane 1","Plane 2","Plane 3"];
+let rows=[], solution=null, cameraYaw=-0.65,cameraPitch=0.45,zoom=1;
+const canvas=document.getElementById("scene");
+const ctx=canvas.getContext("2d");
+
+const equations=document.getElementById("equations");
+for(let i=0;i<3;i++){
+ const box=document.createElement("div");
+ box.className="eq";
+ box.innerHTML=`<small>${names[i]} — ${["BLUE","ORANGE","PURPLE"][i]}</small>
+ <div class="fields">
+ ${["x","y","z","d"].map((v,j)=>`
+ <label>${v}<input id="v${i}_${j}" type="number" step="any" value="${initial[i*4+j]}"></label>
+ `).join("")}
+ </div>`;
+ equations.appendChild(box);
+}
+const $=id=>document.getElementById(id);
+function getRows(){
+ return Array.from({length:3},(_,i)=>
+  Array.from({length:4},(_,j)=>Number($(`v${i}_${j}`).value))
+ );
+}
+function fmt(v){return Number(v.toFixed(3)).toString()}
+function det3(A){
+ return A[0][0]*(A[1][1]*A[2][2]-A[1][2]*A[2][1])
+ -A[0][1]*(A[1][0]*A[2][2]-A[1][2]*A[2][0])
+ +A[0][2]*(A[1][0]*A[2][1]-A[1][1]*A[2][0]);
+}
+function solve3(A,b){
+ const D=det3(A);
+ if(Math.abs(D)<1e-9)return null;
+ const out=[];
+ for(let j=0;j<3;j++){
+  const M=A.map((row,i)=>row.map((v,k)=>k===j?b[i]:v));
+  out.push(det3(M)/D);
+ }
+ return out;
+}
+function rank(M){
+ const a=M.map(r=>r.slice()),m=a.length,n=a[0].length;
+ let r=0;
+ for(let c=0;c<n&&r<m;c++){
+  let p=r;
+  for(let i=r+1;i<m;i++)if(Math.abs(a[i][c])>Math.abs(a[p][c]))p=i;
+  if(Math.abs(a[p][c])<1e-9)continue;
+  [a[r],a[p]]=[a[p],a[r]];
+  const v=a[r][c];
+  for(let j=c;j<n;j++)a[r][j]/=v;
+  for(let i=0;i<m;i++)if(i!==r){
+   const f=a[i][c];
+   for(let j=c;j<n;j++)a[i][j]-=f*a[r][j];
+  }
+  r++;
+ }
+ return r;
+}
+function analyze(){
+ rows=getRows();
+ if(!rows.flat().every(Number.isFinite)){
+  $("result").textContent="Please enter valid numbers.";
+  return;
+ }
+ const A=rows.map(r=>r.slice(0,3)),b=rows.map(r=>r[3]);
+ const D=det3(A);
+ const rankA=rank(A);
+ const augmented=rank(rows);
+ solution=solve3(A,b);
+
+ if(solution){
+  $("result").innerHTML=
+  `<b style="color:#69e5a8">Unique solution</b><br>
+  x = ${fmt(solution[0])}<br>
+  y = ${fmt(solution[1])}<br>
+  z = ${fmt(solution[2])}<br>
+  <b>Common point: (${solution.map(fmt).join(", ")})</b>`;
+ }else if(rankA===augmented){
+  $("result").innerHTML=
+  `<b style="color:#69e5a8">Infinitely many solutions</b><br>
+  The three equations are consistent, but do not determine a unique point.`;
+ }else{
+  $("result").innerHTML=
+  `<b style="color:#ff8c8c">No common solution</b><br>
+  The three planes do not have a common intersection point.`;
+ }
+ $("matrix").innerHTML=
+ `A = [${A.map(r=>r.map(fmt).join("&nbsp;&nbsp;")).join("]<br>[")}]<br><br>
+ X = [x, y, z]ᵀ<br>
+ B = [${b.map(fmt).join(", ")}]ᵀ<br><br>
+ det(A) = ${fmt(D)}<br>
+ rank(A) = ${rankA}, rank([A|B]) = ${augmented}`;
+ draw();
+}
+function preset(n){
+ const sets={
+  1:initial,
+  2:[1,1,1,6, 1,1,1,7, 1,-1,1,2],
+  3:[1,1,1,6, 2,2,2,12, 1,-1,0,0],
+  4:[1,2,1,8, 2,-1,1,3, 1,1,-1,0]
+ };
+ sets[n].forEach((v,i)=>{
+  $(`v${Math.floor(i/4)}_${i%4}`).value=v;
+ });
+ analyze();
+}
+
+// 3D camera projection
+function project(p){
+ const [x,y,z]=p;
+ const cy=Math.cos(cameraYaw),sy=Math.sin(cameraYaw);
+ const cp=Math.cos(cameraPitch),sp=Math.sin(cameraPitch);
+ const X=x*cy-z*sy;
+ const Z=x*sy+z*cy;
+ const Y=y*cp-Z*sp;
+ const depth=y*sp+Z*cp;
+ const factor=zoom*24;
+ return [425+X*factor,310-Y*factor,depth];
+}
+function planePoint(row,u,v){
+ const [a,b,c,d]=row;
+ if(Math.abs(c)>1e-8)return [u,v,(d-a*u-b*v)/c];
+ if(Math.abs(b)>1e-8)return [u,(d-a*u)/b,v];
+ if(Math.abs(a)>1e-8)return [(d-b*u-c*v)/a,u,v];
+ return null;
+}
+function drawPlane(row,color){
+ const pts=[
+  planePoint(row,-5,-5),planePoint(row,5,-5),
+  planePoint(row,5,5),planePoint(row,-5,5)
+ ];
+ if(pts.some(p=>!p||p.some(v=>!Number.isFinite(v))))return;
+ const projected=pts.map(project);
+ ctx.beginPath();ctx.moveTo(projected[0][0],projected[0][1]);
+ projected.slice(1).forEach(p=>ctx.lineTo(p[0],p[1]));
+ ctx.closePath();
+ ctx.fillStyle=color+"35";ctx.fill();
+ ctx.strokeStyle=color;ctx.lineWidth=2;ctx.stroke();
+}
+function line3(a,b,color){
+ const p=project(a),q=project(b);
+ ctx.beginPath();ctx.moveTo(p[0],p[1]);ctx.lineTo(q[0],q[1]);
+ ctx.strokeStyle=color;ctx.lineWidth=2.5;ctx.stroke();
+}
+function drawAxes(){
+ line3([-6,0,0],[6,0,0],"#ff7373");
+ line3([0,-6,0],[0,6,0],"#75dfad");
+ line3([0,0,-6],[0,0,6],"#75aaff");
+ const axes=[
+  [[6,0,0],"X"],[[0,6,0],"Y"],[[0,0,6],"Z"]
+ ];
+ axes.forEach(([p,t])=>{
+  const q=project(p);
+  ctx.fillStyle="white";ctx.font="bold 15px Arial";
+  ctx.fillText(t,q[0]+5,q[1]-5);
+ });
+}
+function draw(){
+ ctx.clearRect(0,0,850,620);
+ ctx.fillStyle="#091321";ctx.fillRect(0,0,850,620);
+ drawAxes();
+ if(rows.length){
+  rows.forEach((r,i)=>drawPlane(r,colors[i]));
+ }
+ if(solution){
+  const p=project(solution);
+  ctx.beginPath();ctx.arc(p[0],p[1],9,0,Math.PI*2);
+  ctx.fillStyle="#69e5a8";ctx.fill();
+  ctx.strokeStyle="white";ctx.lineWidth=2;ctx.stroke();
+  ctx.fillStyle="#69e5a8";ctx.font="bold 16px Arial";
+  ctx.fillText("Intersection",p[0]+12,p[1]-12);
+  ctx.fillText("("+solution.map(fmt).join(", ")+")",p[0]+12,p[1]+10);
+ }
+}
+
+// Mouse drag rotates the 3D scene
+let dragging=false,lastX=0,lastY=0;
+canvas.addEventListener("pointerdown",e=>{
+ dragging=true;lastX=e.clientX;lastY=e.clientY;
+ canvas.setPointerCapture(e.pointerId);
+});
+canvas.addEventListener("pointermove",e=>{
+ if(!dragging)return;
+ cameraYaw+=(e.clientX-lastX)*0.008;
+ cameraPitch=Math.max(-1.35,Math.min(1.35,
+  cameraPitch+(e.clientY-lastY)*0.008));
+ lastX=e.clientX;lastY=e.clientY;
+ draw();
+});
+canvas.addEventListener("pointerup",()=>dragging=false);
+canvas.addEventListener("pointercancel",()=>dragging=false);
+canvas.addEventListener("wheel",e=>{
+ e.preventDefault();
+ zoom=Math.max(.55,Math.min(1.8,zoom*(e.deltaY>0?.92:1.08)));
+ draw();
+},{passive:false});
+
+function solve(){analyze()}
+analyze();
+</script>
+</body>
+</html>
