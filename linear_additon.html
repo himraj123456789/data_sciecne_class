@@ -1,0 +1,624 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Geometrical Vector Addition Simulator</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #eef2f7;
+    color: #172033;
+}
+
+header {
+    background: #172554;
+    color: white;
+    text-align: center;
+    padding: 22px 12px;
+}
+
+header h1 {
+    margin: 0 0 8px;
+}
+
+header p {
+    margin: 0;
+    color: #dbeafe;
+}
+
+.container {
+    max-width: 1150px;
+    margin: auto;
+    padding: 18px;
+}
+
+.card {
+    background: white;
+    border-radius: 13px;
+    padding: 18px;
+    margin-bottom: 17px;
+    box-shadow: 0 3px 12px #0000000c;
+}
+
+h2 {
+    color: #1e3a8a;
+    margin-top: 0;
+}
+
+.formula {
+    text-align: center;
+    font-size: 26px;
+    font-weight: bold;
+    color: #1d4ed8;
+    padding: 15px;
+    background: #eff6ff;
+    border-radius: 10px;
+}
+
+.layout {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 18px;
+}
+
+.control {
+    background: #f8fafc;
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 12px;
+}
+
+.control label {
+    display: flex;
+    justify-content: space-between;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+input[type=range] {
+    width: 100%;
+    cursor: pointer;
+}
+
+.value {
+    color: #2563eb;
+    font-size: 18px;
+}
+
+canvas {
+    width: 100%;
+    height: 500px;
+    border: 1px solid #dbe3ef;
+    border-radius: 10px;
+    display: block;
+    background: white;
+}
+
+button {
+    padding: 10px 13px;
+    border: none;
+    border-radius: 7px;
+    background: #1d4ed8;
+    color: white;
+    cursor: pointer;
+    margin: 4px 2px;
+}
+
+button:hover {
+    background: #1e40af;
+}
+
+.secondary {
+    background: #475569;
+}
+
+.legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-top: 12px;
+}
+
+.legend span {
+    font-size: 13px;
+}
+
+.dot {
+    display: inline-block;
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    margin-right: 5px;
+}
+
+.calculation {
+    background: #f1f5f9;
+    padding: 16px;
+    border-radius: 9px;
+    line-height: 1.9;
+    overflow-wrap: anywhere;
+}
+
+.result {
+    font-size: 22px;
+    color: #15803d;
+    font-weight: bold;
+}
+
+.grid-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.info {
+    background: #eff6ff;
+    border-left: 4px solid #2563eb;
+    padding: 12px;
+    border-radius: 5px;
+    line-height: 1.6;
+}
+
+@media(max-width:800px) {
+    .layout {
+        grid-template-columns: 1fr;
+    }
+    canvas {
+        height: 380px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <h1>Vector Addition: Geometrical Sense</h1>
+    <p>Understand how two vectors combine to create a resultant vector</p>
+</header>
+
+<div class="container">
+
+    <div class="card">
+        <h2>1. Basic mathematical concept</h2>
+        <div class="formula">R = A + B</div>
+        <p>
+            Vector addition means combining two vectors.
+            The resultant vector represents their combined
+            magnitude and direction.
+        </p>
+    </div>
+
+    <div class="card">
+        <h2>2. Interactive vector laboratory</h2>
+
+        <div class="layout">
+
+            <div>
+
+                <div class="control">
+                    <h3 style="color:#2563eb">Vector A</h3>
+
+                    <label>
+                        X coordinate
+                        <span class="value" id="axVal">3</span>
+                    </label>
+                    <input type="range" id="ax"
+                    min="-8" max="8" value="3">
+
+                    <label style="margin-top:15px">
+                        Y coordinate
+                        <span class="value" id="ayVal">2</span>
+                    </label>
+                    <input type="range" id="ay"
+                    min="-8" max="8" value="2">
+                </div>
+
+                <div class="control">
+                    <h3 style="color:#16a34a">Vector B</h3>
+
+                    <label>
+                        X coordinate
+                        <span class="value" id="bxVal">2</span>
+                    </label>
+                    <input type="range" id="bx"
+                    min="-8" max="8" value="2">
+
+                    <label style="margin-top:15px">
+                        Y coordinate
+                        <span class="value" id="byVal">3</span>
+                    </label>
+                    <input type="range" id="by"
+                    min="-8" max="8" value="3">
+                </div>
+
+                <div class="control">
+                    <h3>Visualization options</h3>
+
+                    <label style="justify-content:flex-start;gap:8px">
+                        <input type="checkbox" id="showPath" checked>
+                        Show head-to-tail path
+                    </label>
+
+                    <label style="justify-content:flex-start;gap:8px">
+                        <input type="checkbox" id="showPara" checked>
+                        Show parallelogram
+                    </label>
+
+                    <label style="justify-content:flex-start;gap:8px">
+                        <input type="checkbox" id="showComponents" checked>
+                        Show vector components
+                    </label>
+                </div>
+
+                <div class="control">
+                    <h3>Ready-made examples</h3>
+                    <div class="grid-buttons">
+                        <button onclick="preset(3,0,0,3)">
+                            Perpendicular
+                        </button>
+                        <button onclick="preset(3,0,2,0)">
+                            Same direction
+                        </button>
+                        <button onclick="preset(5,0,-3,0)">
+                            Opposite direction
+                        </button>
+                        <button onclick="preset(3,2,-3,-2)">
+                            Cancellation
+                        </button>
+                        <button onclick="preset(3,2,2,3)">
+                            General case
+                        </button>
+                        <button class="secondary"
+                        onclick="preset(0,0,0,0)">
+                            Reset
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+            <div>
+                <canvas id="graph"></canvas>
+
+                <div class="legend">
+                    <span>
+                        <i class="dot" style="background:#2563eb"></i>
+                        Vector A
+                    </span>
+
+                    <span>
+                        <i class="dot" style="background:#16a34a"></i>
+                        Vector B
+                    </span>
+
+                    <span>
+                        <i class="dot" style="background:#dc2626"></i>
+                        Resultant R
+                    </span>
+
+                    <span>
+                        <i class="dot" style="background:#94a3b8"></i>
+                        Guide lines
+                    </span>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>3. Mathematical calculation</h2>
+
+        <div class="calculation" id="calculation">
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>4. Geometrical interpretation</h2>
+
+        <div class="info" id="interpretation">
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>5. Important properties</h2>
+
+        <p><b>Commutative property:</b></p>
+        <div class="formula">A + B = B + A</div>
+
+        <p><b>Zero vector:</b></p>
+        <div class="formula">A + 0 = A</div>
+
+        <p><b>Additive inverse:</b></p>
+        <div class="formula">A + (-A) = 0</div>
+
+        <p>
+            These properties explain why vector addition is
+            a fundamental operation in linear algebra.
+        </p>
+    </div>
+
+    <div class="card">
+        <h2>6. Classroom challenge</h2>
+
+        <p>
+            Set A = (3, 4) and B = (4, 3).
+            Predict the resultant before checking.
+        </p>
+
+        <button onclick="preset(3,4,4,3)">
+            Load challenge
+        </button>
+
+        <p>
+            Expected answer:
+            <b>R = (7, 7)</b>
+        </p>
+
+        <p>
+            Can students explain why the red diagonal
+            represents the combined movement?
+        </p>
+    </div>
+
+</div>
+
+<script>
+const canvas = document.getElementById("graph");
+const ctx = canvas.getContext("2d");
+
+const ids = ["ax","ay","bx","by"];
+
+function val(id) {
+    return Number(document.getElementById(id).value);
+}
+
+function preset(ax,ay,bx,by) {
+    const values = {ax,ay,bx,by};
+
+    for(const id of ids) {
+        document.getElementById(id).value = values[id];
+    }
+
+    update();
+}
+
+function arrow(x1,y1,x2,y2,color,width=3) {
+    const angle = Math.atan2(y2-y1,x2-x1);
+    const head = 11;
+
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = width;
+
+    ctx.beginPath();
+    ctx.moveTo(x1,y1);
+    ctx.lineTo(x2,y2);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(x2,y2);
+    ctx.lineTo(
+        x2-head*Math.cos(angle-0.45),
+        y2-head*Math.sin(angle-0.45)
+    );
+    ctx.lineTo(
+        x2-head*Math.cos(angle+0.45),
+        y2-head*Math.sin(angle+0.45)
+    );
+    ctx.closePath();
+    ctx.fill();
+}
+
+function update() {
+
+    const ax=val("ax");
+    const ay=val("ay");
+    const bx=val("bx");
+    const by=val("by");
+
+    const rx=ax+bx;
+    const ry=ay+by;
+
+    document.getElementById("axVal").textContent=ax;
+    document.getElementById("ayVal").textContent=ay;
+    document.getElementById("bxVal").textContent=bx;
+    document.getElementById("byVal").textContent=by;
+
+    draw(ax,ay,bx,by,rx,ry);
+
+    const magnitudeA=Math.hypot(ax,ay);
+    const magnitudeB=Math.hypot(bx,by);
+    const magnitudeR=Math.hypot(rx,ry);
+
+    document.getElementById("calculation").innerHTML=`
+        <b>Step 1: Write both vectors</b><br>
+        A = (${ax}, ${ay})<br>
+        B = (${bx}, ${by})<br><br>
+
+        <b>Step 2: Add corresponding components</b><br>
+        R = A + B<br>
+        R = (${ax} + ${bx}, ${ay} + ${by})<br><br>
+
+        <b>Step 3: Resultant vector</b><br>
+        <span class="result">R = (${rx}, ${ry})</span><br><br>
+
+        Magnitude of A = ${magnitudeA.toFixed(2)}<br>
+        Magnitude of B = ${magnitudeB.toFixed(2)}<br>
+        Magnitude of R = ${magnitudeR.toFixed(2)}
+    `;
+
+    let message="The resultant is the diagonal from the origin to the combined endpoint.";
+
+    if(rx===0 && ry===0) {
+        message="Both vectors cancel each other. Their resultant is the zero vector.";
+    }
+    else if(ax*by-ay*bx===0) {
+        if(ax*bx+ay*by>0) {
+            message="Both vectors are parallel and point in the same direction. Their magnitudes reinforce each other.";
+        } else if(ax*bx+ay*by<0) {
+            message="Both vectors point in opposite directions. Their effects oppose each other.";
+        }
+    }
+    else if(ax*bx+ay*by===0) {
+        message="The two vectors are perpendicular (90 degrees). The resultant forms the hypotenuse of a right triangle.";
+    }
+
+    document.getElementById("interpretation").textContent=message;
+}
+
+function draw(ax,ay,bx,by,rx,ry) {
+
+    const rect=canvas.getBoundingClientRect();
+    const dpr=window.devicePixelRatio||1;
+
+    canvas.width=rect.width*dpr;
+    canvas.height=rect.height*dpr;
+
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+
+    const W=rect.width;
+    const H=rect.height;
+
+    ctx.clearRect(0,0,W,H);
+
+    const centerX=W/2;
+    const centerY=H/2;
+
+    const scale=Math.min(W/20,H/19,32);
+
+    const X=x=>centerX+x*scale;
+    const Y=y=>centerY-y*scale;
+
+    // Grid
+    ctx.strokeStyle="#e5eaf1";
+    ctx.lineWidth=1;
+
+    for(let i=-9;i<=9;i++) {
+        ctx.beginPath();
+        ctx.moveTo(X(i),0);
+        ctx.lineTo(X(i),H);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(0,Y(i));
+        ctx.lineTo(W,Y(i));
+        ctx.stroke();
+    }
+
+    // Axes
+    ctx.strokeStyle="#334155";
+    ctx.lineWidth=1.8;
+
+    ctx.beginPath();
+    ctx.moveTo(0,centerY);
+    ctx.lineTo(W,centerY);
+
+    ctx.moveTo(centerX,0);
+    ctx.lineTo(centerX,H);
+    ctx.stroke();
+
+    ctx.fillStyle="#334155";
+    ctx.font="13px Arial";
+    ctx.fillText("X",W-20,centerY-8);
+    ctx.fillText("Y",centerX+9,15);
+    ctx.fillText("O",centerX+7,centerY+15);
+
+    const origin=[X(0),Y(0)];
+    const pointA=[X(ax),Y(ay)];
+    const pointB=[X(bx),Y(by)];
+    const result=[X(rx),Y(ry)];
+
+    const pointAB=[X(rx),Y(ry)];
+
+    // Parallelogram guides
+    if(document.getElementById("showPara").checked) {
+        ctx.save();
+        ctx.strokeStyle="#94a3b8";
+        ctx.setLineDash([6,5]);
+        ctx.lineWidth=1.8;
+
+        ctx.beginPath();
+        ctx.moveTo(...pointA);
+        ctx.lineTo(...pointAB);
+        ctx.lineTo(...pointB);
+        ctx.stroke();
+
+        ctx.restore();
+    }
+
+    // Vector components
+    if(document.getElementById("showComponents").checked) {
+        ctx.save();
+        ctx.strokeStyle="#94a3b8";
+        ctx.setLineDash([4,4]);
+
+        ctx.beginPath();
+        ctx.moveTo(X(ax),Y(0));
+        ctx.lineTo(X(ax),Y(ay));
+
+        ctx.moveTo(X(0),Y(ay));
+        ctx.lineTo(X(ax),Y(ay));
+
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(X(bx),Y(0));
+        ctx.lineTo(X(bx),Y(by));
+
+        ctx.moveTo(X(0),Y(by));
+        ctx.lineTo(X(bx),Y(by));
+
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    // Original vectors
+    arrow(...origin,...pointA,"#2563eb",3.5);
+    arrow(...origin,...pointB,"#16a34a",3.5);
+
+    // Head-to-tail path
+    if(document.getElementById("showPath").checked) {
+        arrow(...pointA,...result,"#16a34a",3);
+    }
+
+    // Resultant
+    arrow(...origin,...result,"#dc2626",4.5);
+
+    // Labels
+    ctx.font="bold 13px Arial";
+
+    ctx.fillStyle="#2563eb";
+    ctx.fillText("A",pointA[0]+7,pointA[1]-8);
+
+    ctx.fillStyle="#16a34a";
+    ctx.fillText("B",pointB[0]+7,pointB[1]-8);
+
+    ctx.fillStyle="#dc2626";
+    ctx.fillText("R ("+rx+","+ry+")",result[0]+7,result[1]-10);
+}
+
+ids.forEach(id=>{
+    document.getElementById(id).addEventListener("input",update);
+});
+
+["showPath","showPara","showComponents"].forEach(id=>{
+    document.getElementById(id).addEventListener("change",update);
+});
+
+window.addEventListener("resize",update);
+
+update();
+</script>
+
+</body>
+</html>
