@@ -1,0 +1,449 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Matrix Multiplication: Geometric Simulator</title>
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;background:#0b1020;color:#eef2ff;
+  font-family:Arial,sans-serif;
+}
+header{
+  text-align:center;padding:25px 15px;
+  background:linear-gradient(120deg,#172554,#312e81,#164e63);
+}
+header h1{margin:0;font-size:clamp(23px,4vw,36px)}
+header p{color:#c7d2fe;margin:10px 0 0}
+.container{max-width:1250px;margin:auto;padding:18px}
+.formula{
+  background:#172554;border:1px solid #3b82f6;
+  border-radius:14px;padding:17px;text-align:center;
+  margin-bottom:18px;
+}
+.formula strong{font-size:clamp(20px,4vw,30px);color:#93c5fd}
+.formula p{margin:8px 0 0;color:#cbd5e1}
+.controls{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
+  gap:14px;margin-bottom:20px;
+}
+.panel{
+  background:#151d32;border:1px solid #293750;
+  border-radius:13px;padding:16px;
+}
+.panel h3{margin:0 0 12px;color:#bfdbfe}
+label{display:flex;justify-content:space-between;margin:12px 0 5px;color:#cbd5e1}
+input[type=range]{width:100%;accent-color:#60a5fa}
+.value{color:#fbbf24;font-weight:bold}
+.matrix{
+  display:inline-grid;grid-template-columns:repeat(2,55px);
+  gap:8px;position:relative;padding:7px 15px;
+  margin:5px 0;font-size:19px;text-align:center;
+}
+.matrix:before,.matrix:after{
+  content:"";position:absolute;top:0;bottom:0;width:7px;
+  border-top:2px solid #94a3b8;border-bottom:2px solid #94a3b8;
+}
+.matrix:before{left:0;border-left:2px solid #94a3b8}
+.matrix:after{right:0;border-right:2px solid #94a3b8}
+.matrix span{padding:4px}
+.matrix-area{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.matrix-name{font-weight:bold;color:#93c5fd}
+button{
+  border:0;border-radius:9px;padding:11px 17px;
+  font-weight:bold;cursor:pointer;margin:4px;
+  background:#2563eb;color:white;
+}
+button:hover{filter:brightness(1.2)}
+button.secondary{background:#334155}
+button.green{background:#047857}
+button.orange{background:#b45309}
+.actions{text-align:center;margin:15px 0}
+.graphs{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+  gap:14px;
+}
+.graph-card{
+  background:#151d32;border:1px solid #334155;
+  border-radius:13px;padding:13px;min-width:0;
+}
+.graph-card h3{font-size:16px;margin:2px 0 5px}
+.graph-card p{font-size:12px;color:#94a3b8;margin:5px 0 10px}
+canvas{
+  width:100%;height:270px;background:#0b1224;
+  border-radius:9px;display:block;
+}
+.blue{color:#60a5fa}.green-text{color:#4ade80}
+.red{color:#fb7185}.yellow{color:#fbbf24}
+.legend{
+  display:flex;flex-wrap:wrap;gap:12px;
+  font-size:12px;color:#cbd5e1;margin-top:10px;
+}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:4px}
+.results{
+  margin-top:18px;background:#151d32;
+  border:1px solid #334155;border-radius:13px;padding:17px;
+}
+.result-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
+  gap:12px;margin-top:12px;
+}
+.result{
+  background:#0b1224;padding:14px;border-radius:10px;
+  border-left:4px solid #60a5fa;
+}
+.result small{color:#94a3b8}
+.result strong{display:block;font-size:21px;margin-top:7px}
+.success{
+  color:#4ade80;text-align:center;font-size:20px;
+  font-weight:bold;margin:18px 0 4px;
+}
+.steps{
+  margin-top:18px;background:#172554;border-radius:12px;padding:17px;
+  line-height:1.8;
+}
+.steps h3{margin-top:0}
+.math{font-family:Georgia,serif;font-size:17px}
+.note{color:#cbd5e1;font-size:14px;line-height:1.7}
+@media(max-width:600px){
+ .container{padding:10px}
+ canvas{height:240px}
+ .matrix{grid-template-columns:repeat(2,42px)}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>Matrix Multiplication: Geometric Meaning</h1>
+  <p>Understand why (AB)X = A(BX) using animated vector transformations</p>
+</header>
+
+<div class="container">
+  <div class="formula">
+    <strong>C = A × B</strong>
+    <p>Applying C directly is equivalent to applying B first and then A.</p>
+    <div class="math"> (AB)X = A(BX) </div>
+  </div>
+
+  <div class="controls">
+    <div class="panel">
+      <h3>1. Original vector X</h3>
+      <label>X coordinate <span class="value" id="xVal">1</span></label>
+      <input id="x" type="range" min="-3" max="3" step=".5" value="1">
+      <label>Y coordinate <span class="value" id="yVal">1</span></label>
+      <input id="y" type="range" min="-3" max="3" step=".5" value="1">
+      <p class="note">Change the starting vector and observe both methods.</p>
+      <div class="math">X = [ x, y ]ᵀ</div>
+    </div>
+
+    <div class="panel">
+      <h3>2. Transformation B</h3>
+      <div class="matrix-area">
+        <span class="matrix-name">B =</span>
+        <div class="matrix" id="matrixB">
+          <span>2</span><span>0</span>
+          <span>0</span><span>1</span>
+        </div>
+      </div>
+      <p class="note">Horizontal scaling: doubles the x-coordinate.</p>
+    </div>
+
+    <div class="panel">
+      <h3>3. Transformation A</h3>
+      <div class="matrix-area">
+        <span class="matrix-name">A =</span>
+        <div class="matrix">
+          <span>0</span><span>-1</span>
+          <span>1</span><span>0</span>
+        </div>
+      </div>
+      <p class="note">Rotates a vector 90° anticlockwise.</p>
+    </div>
+
+    <div class="panel">
+      <h3>4. Combined transformation C</h3>
+      <div class="matrix-area">
+        <span class="matrix-name">C = AB =</span>
+        <div class="matrix" id="matrixC">
+          <span>0</span><span>-1</span>
+          <span>2</span><span>0</span>
+        </div>
+      </div>
+      <p class="note">One matrix representing both transformations together.</p>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button onclick="animateSteps()">▶ Animate transformations</button>
+    <button class="green" onclick="setExample(1,1)">Example (1,1)</button>
+    <button class="orange" onclick="setExample(2,1)">Example (2,1)</button>
+    <button class="secondary" onclick="setExample(-1,2)">Example (-1,2)</button>
+    <button class="secondary" onclick="resetAll()">Reset</button>
+  </div>
+
+  <div class="graphs">
+    <div class="graph-card">
+      <h3 class="blue">Original vector X</h3>
+      <p>Starting position before transformation</p>
+      <canvas id="g0"></canvas>
+    </div>
+    <div class="graph-card">
+      <h3 class="yellow">Method 1: C × X</h3>
+      <p>Apply the combined matrix directly</p>
+      <canvas id="g1"></canvas>
+    </div>
+    <div class="graph-card">
+      <h3 class="green-text">Method 2: B then A</h3>
+      <p>See the intermediate and final vectors</p>
+      <canvas id="g2"></canvas>
+    </div>
+  </div>
+
+  <div class="legend">
+    <span><i class="dot" style="background:#60a5fa"></i>Original X</span>
+    <span><i class="dot" style="background:#fbbf24"></i>Direct result CX</span>
+    <span><i class="dot" style="background:#4ade80"></i>Intermediate BX</span>
+    <span><i class="dot" style="background:#fb7185"></i>Final A(BX)</span>
+  </div>
+
+  <div class="results">
+    <h2 style="margin-top:0">Live calculation</h2>
+    <div class="result-grid">
+      <div class="result">
+        <small>Original vector X</small>
+        <strong id="original">[1, 1]</strong>
+      </div>
+      <div class="result">
+        <small>Intermediate vector BX</small>
+        <strong id="intermediate">[2, 1]</strong>
+      </div>
+      <div class="result">
+        <small>Direct result CX</small>
+        <strong id="direct">[-1, 2]</strong>
+      </div>
+      <div class="result">
+        <small>Sequential result A(BX)</small>
+        <strong id="sequential">[-1, 2]</strong>
+      </div>
+    </div>
+    <div class="success" id="match">✓ Both results are equal!</div>
+  </div>
+
+  <div class="steps">
+    <h3>Step-by-step mathematical calculation</h3>
+    <div id="working" class="math"></div>
+    <p class="note">
+      Notice that B acts first because it is closest to X. Then A acts on the
+      result of B. Matrix multiplication combines these two operations into C.
+    </p>
+  </div>
+
+  <div class="steps" style="background:#292044">
+    <h3>Important concept for students</h3>
+    <p class="note">
+      <b>Associative property:</b> (AB)X = A(BX). You can combine the matrices
+      first or apply them one by one. The final answer remains the same.
+    </p>
+    <p class="note">
+      <b>But remember:</b> AB is generally not equal to BA. The order of
+      transformations matters. In AB, B acts first and A acts second.
+    </p>
+  </div>
+</div>
+
+<script>
+const A = [[0,-1],[1,0]];
+const B = [[2,0],[0,1]];
+let animationFrame = null;
+let animationProgress = 1;
+
+const $ = id => document.getElementById(id);
+
+function multiply(M,v){
+  return [
+    M[0][0]*v[0] + M[0][1]*v[1],
+    M[1][0]*v[0] + M[1][1]*v[1]
+  ];
+}
+function multiplyMatrices(M,N){
+  return [
+    [
+      M[0][0]*N[0][0]+M[0][1]*N[1][0],
+      M[0][0]*N[0][1]+M[0][1]*N[1][1]
+    ],
+    [
+      M[1][0]*N[0][0]+M[1][1]*N[1][0],
+      M[1][0]*N[0][1]+M[1][1]*N[1][1]
+    ]
+  ];
+}
+const C = multiplyMatrices(A,B);
+
+function fmt(n){
+  let v = Math.abs(n)<0.00001 ? 0 : n;
+  return Number(v.toFixed(2)).toString();
+}
+function vec(v){return `[${fmt(v[0])}, ${fmt(v[1])}]`;}
+
+function drawArrow(ctx, origin, v, scale, color, label, dashed=false){
+  const x0=origin.x, y0=origin.y;
+  const x1=x0+v[0]*scale, y1=y0-v[1]*scale;
+  ctx.save();
+  ctx.strokeStyle=color;
+  ctx.fillStyle=color;
+  ctx.lineWidth=3;
+  ctx.setLineDash(dashed?[6,5]:[]);
+  ctx.beginPath();
+  ctx.moveTo(x0,y0);
+  ctx.lineTo(x1,y1);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  const angle=Math.atan2(y1-y0,x1-x0);
+  ctx.beginPath();
+  ctx.moveTo(x1,y1);
+  ctx.lineTo(x1-11*Math.cos(angle-.45),y1-11*Math.sin(angle-.45));
+  ctx.lineTo(x1-11*Math.cos(angle+.45),y1-11*Math.sin(angle+.45));
+  ctx.closePath();
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(x1,y1,4,0,Math.PI*2);
+  ctx.fill();
+  ctx.font="bold 13px Arial";
+  ctx.fillText(label,x1+8,y1-9);
+  ctx.restore();
+}
+
+function drawGrid(ctx,canvas,scale){
+  const w=canvas.width,h=canvas.height;
+  const ox=w/2,oy=h/2;
+  ctx.clearRect(0,0,w,h);
+  ctx.fillStyle="#0b1224";ctx.fillRect(0,0,w,h);
+  ctx.strokeStyle="#26334b";ctx.lineWidth=1;
+  for(let x=ox%scale;x<w;x+=scale){
+    ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke();
+  }
+  for(let y=oy%scale;y<h;y+=scale){
+    ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();
+  }
+  ctx.strokeStyle="#94a3b8";ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(0,oy);ctx.lineTo(w,oy);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(ox,0);ctx.lineTo(ox,h);ctx.stroke();
+  ctx.fillStyle="#94a3b8";ctx.font="11px Arial";
+  ctx.fillText("X",w-17,oy-8);
+  ctx.fillText("Y",ox+8,13);
+  ctx.fillText("O",ox+6,oy+15);
+  return {x:ox,y:oy};
+}
+
+function drawPanel(id,vectors){
+  const canvas=$(id);
+  const ctx=canvas.getContext("2d");
+  const rect=canvas.getBoundingClientRect();
+  const dpr=window.devicePixelRatio||1;
+  const w=Math.max(250,rect.width);
+  const h=270;
+  canvas.width=w*dpr;canvas.height=h*dpr;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  const logical={width:w,height:h};
+  const scale=Math.min(w/9,h/7,38);
+  const origin=drawGrid(ctx,logical,scale);
+
+  vectors.forEach(v=>{
+    if(v.value) drawArrow(ctx,origin,v.value,scale,v.color,v.label,v.dashed);
+  });
+}
+
+function update(){
+  const x=Number($("x").value);
+  const y=Number($("y").value);
+  const X=[x,y];
+  const BX=multiply(B,X);
+  const CX=multiply(C,X);
+  const ABX=multiply(A,BX);
+
+  $("xVal").textContent=fmt(x);
+  $("yVal").textContent=fmt(y);
+  $("original").textContent=vec(X);
+  $("intermediate").textContent=vec(BX);
+  $("direct").textContent=vec(CX);
+  $("sequential").textContent=vec(ABX);
+
+  $("matrixC").innerHTML=
+    `<span>${fmt(C[0][0])}</span><span>${fmt(C[0][1])}</span>
+     <span>${fmt(C[1][0])}</span><span>${fmt(C[1][1])}</span>`;
+
+  const equal = CX.every((v,i)=>Math.abs(v-ABX[i])<1e-9);
+  $("match").textContent=equal
+    ? "✓ Both results are equal!"
+    : "Results do not match";
+  $("match").style.color=equal?"#4ade80":"#fb7185";
+
+  $("working").innerHTML=`
+    <p><b>Given:</b> X = ${vec(X)}</p>
+    <p><b>Step 1: Calculate BX</b></p>
+    B X = [ 2 × ${fmt(x)} + 0 × ${fmt(y)}, 0 × ${fmt(x)} + 1 × ${fmt(y)} ]ᵀ
+    <br>BX = ${vec(BX)}
+    <p><b>Step 2: Apply A to BX</b></p>
+    A(BX) = [ -${fmt(BX[1])}, ${fmt(BX[0])} ]ᵀ
+    <br>A(BX) = ${vec(ABX)}
+    <p><b>Step 3: Apply C directly</b></p>
+    C X = [ -${fmt(y)}, 2 × ${fmt(x)} ]ᵀ
+    <br>CX = ${vec(CX)}
+    <p style="color:#4ade80"><b>Conclusion: CX = A(BX) = ${vec(CX)}</b></p>
+  `;
+
+  const progress=animationProgress;
+  const mid=[
+    BX[0]*progress,
+    BX[1]*progress
+  ];
+  const final=[
+    ABX[0]*progress,
+    ABX[1]*progress
+  ];
+
+  drawPanel("g0",[
+    {value:X,color:"#60a5fa",label:"X"}
+  ]);
+  drawPanel("g1",[
+    {value:[CX[0]*progress,CX[1]*progress],color:"#fbbf24",label:"CX"}
+  ]);
+  drawPanel("g2",[
+    {value:X,color:"#60a5fa",label:"X",dashed:true},
+    {value:mid,color:"#4ade80",label:"BX"},
+    {value:final,color:"#fb7185",label:"A(BX)"}
+  ]);
+}
+
+function animateSteps(){
+  if(animationFrame) cancelAnimationFrame(animationFrame);
+  animationProgress=0;
+  const start=performance.now();
+  const duration=1500;
+  function frame(now){
+    const t=Math.min(1,(now-start)/duration);
+    animationProgress=t;
+    update();
+    if(t<1) animationFrame=requestAnimationFrame(frame);
+    else animationFrame=null;
+  }
+  animationFrame=requestAnimationFrame(frame);
+}
+function setExample(x,y){
+  $("x").value=x;
+  $("y").value=y;
+  animationProgress=1;
+  update();
+}
+function resetAll(){
+  setExample(1,1);
+}
+$("x").addEventListener("input",()=>{animationProgress=1;update();});
+$("y").addEventListener("input",()=>{animationProgress=1;update();});
+window.addEventListener("resize",update);
+update();
+</script>
+</body>
+</html>
