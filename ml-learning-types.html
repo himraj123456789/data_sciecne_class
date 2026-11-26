@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Three ways a machine learns</title>
+<style>
+:root{
+  --bg:#F3F6F8; --surface:#FFFFFF; --ink:#13202E; --muted:#56677A; --line:#D5DDE5;
+  --sup:#2563D9; --uns:#0E8F6E; --rl:#7A45D1;
+  --c0:#2563D9; --c1:#E27B16; --c2:#0E8F6E; --c3:#C43E7C; --c4:#7A45D1;
+  --canvas:#FBFCFD; --grid:#E3EAF0;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0E151D; --surface:#16202B; --ink:#E8EEF4; --muted:#93A3B5; --line:#2A3846;
+    --sup:#6B9BFF; --uns:#3FCBA3; --rl:#B28CFF;
+    --c0:#6B9BFF; --c1:#F4A04A; --c2:#3FCBA3; --c3:#F277AE; --c4:#B28CFF;
+    --canvas:#111B25; --grid:#1F2C39;
+  }
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  --accent:var(--sup);
+}
+body[data-active="sup"]{--accent:var(--sup)}
+body[data-active="uns"]{--accent:var(--uns)}
+body[data-active="rl"]{--accent:var(--rl)}
+main{max-width:760px; margin:0 auto; padding:28px 16px 56px}
+h1{
+  font:600 clamp(28px,6vw,40px)/1.1 ui-serif,"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+  letter-spacing:-.01em; margin:0 0 8px;
+}
+.lede{color:var(--muted); margin:0 0 22px; max-width:56ch}
+
+.tabs{display:grid; grid-template-columns:repeat(3,1fr); border-bottom:1px solid var(--line)}
+.tab{
+  appearance:none; background:none; border:0; border-bottom:4px solid transparent;
+  padding:12px 4px 10px; font:inherit; font-weight:600; color:var(--muted); cursor:pointer;
+  margin-bottom:-1px;
+}
+.tab[data-p="sup"]{--t:var(--sup)} .tab[data-p="uns"]{--t:var(--uns)} .tab[data-p="rl"]{--t:var(--rl)}
+.tab[aria-selected="true"]{color:var(--ink); border-bottom-color:var(--t)}
+.tab:focus-visible,.btn:focus-visible,input[type=range]:focus-visible{outline:2px solid var(--accent); outline-offset:2px}
+
+.panel{
+  background:var(--surface); border:1px solid var(--line); border-top:0;
+  border-radius:0 0 14px 14px; padding:20px 16px 18px;
+}
+.panel[hidden]{display:none}
+h2{
+  font:600 22px/1.2 ui-serif,"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+  margin:0 0 6px; color:var(--accent);
+}
+.def{margin:0 0 14px; max-width:60ch}
+canvas{
+  display:block; width:100%; height:auto; aspect-ratio:480/320;
+  background:var(--canvas); border:1px solid var(--line); border-radius:8px; touch-action:manipulation;
+}
+canvas.spark{aspect-ratio:480/56; margin-top:8px}
+.controls{display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:12px 0 8px}
+.btn{
+  appearance:none; font:inherit; font-weight:600; font-size:15px; cursor:pointer;
+  padding:9px 14px; border-radius:8px; border:1px solid var(--line);
+  background:var(--surface); color:var(--ink);
+}
+.btn.primary{background:var(--accent); border-color:var(--accent); color:#fff}
+@media (prefers-color-scheme: dark){ .btn.primary{color:#0E151D} }
+.btn:disabled{opacity:.5; cursor:default}
+.range{display:flex; align-items:center; gap:8px; font-size:15px; color:var(--muted)}
+.range input{accent-color:var(--accent); width:110px}
+.status{margin:4px 0 0; font-weight:600; min-height:1.5em}
+.note{margin:2px 0 0; color:var(--muted); font-size:15px; min-height:1.5em}
+.legend{display:flex; gap:16px; margin:10px 0 0; font-size:14px; color:var(--muted); flex-wrap:wrap}
+.legend span{display:inline-flex; align-items:center; gap:6px}
+.sw{width:12px; height:12px; display:inline-block}
+.sw.circle{border-radius:50%}
+
+.compare{margin-top:30px}
+.compare h2{color:var(--ink)}
+.tablewrap{background:var(--surface); border:1px solid var(--line); border-radius:12px; overflow:hidden}
+table{border-collapse:collapse; width:100%; font-size:14.5px}
+th,td{padding:10px 12px; text-align:left; vertical-align:top; border-top:1px solid var(--line)}
+thead th{border-top:0; font-size:15px}
+tbody th{font-weight:600; width:19%; color:var(--muted)}
+th[data-p="sup"]{color:var(--sup)} th[data-p="uns"]{color:var(--uns)} th[data-p="rl"]{color:var(--rl)}
+body[data-active="sup"] [data-p="sup"]{background:color-mix(in srgb,var(--sup) 9%,transparent)}
+body[data-active="uns"] [data-p="uns"]{background:color-mix(in srgb,var(--uns) 9%,transparent)}
+body[data-active="rl"]  [data-p="rl"] {background:color-mix(in srgb,var(--rl) 9%,transparent)}
+@media (max-width:640px){
+  body[data-active="sup"] [data-p]:not([data-p="sup"]),
+  body[data-active="uns"] [data-p]:not([data-p="uns"]),
+  body[data-active="rl"]  [data-p]:not([data-p="rl"]){display:none}
+  tbody th{width:30%}
+}
+</style>
+</head>
+<body data-active="sup">
+<main>
+  <h1>Three ways a machine learns</h1>
+  <p class="lede">Same computer, different kind of feedback. Pick a tab and run the demo.</p>
+
+  <div class="tabs" role="tablist" aria-label="Learning type">
+    <button class="tab" role="tab" data-p="sup" id="tab-sup" aria-selected="true" aria-controls="panel-sup">Supervised</button>
+    <button class="tab" role="tab" data-p="uns" id="tab-uns" aria-selected="false" aria-controls="panel-uns">Unsupervised</button>
+    <button class="tab" role="tab" data-p="rl"  id="tab-rl"  aria-selected="false" aria-controls="panel-rl">Reinforcement</button>
+  </div>
+
+  <!-- SUPERVISED -->
+  <section class="panel" id="panel-sup" role="tabpanel" aria-labelledby="tab-sup">
+    <h2>Learning from labeled examples</h2>
+    <p class="def">Every training point comes with the right answer. The model adjusts itself until its guesses match those answers, then predicts labels for points it has never seen.</p>
+    <canvas id="sup-cv" aria-label="Scatter plot of two labeled groups with a decision boundary"></canvas>
+    <div class="legend">
+      <span><i class="sw circle" style="background:var(--c1)"></i>Label A</span>
+      <span><i class="sw" style="background:var(--c0)"></i>Label B</span>
+    </div>
+    <div class="controls">
+      <button class="btn primary" id="sup-train">Train the model</button>
+      <button class="btn" id="sup-new">New data</button>
+    </div>
+    <p class="status" id="sup-status" aria-live="polite"></p>
+    <p class="note" id="sup-note"></p>
+  </section>
+
+  <!-- UNSUPERVISED -->
+  <section class="panel" id="panel-uns" role="tabpanel" aria-labelledby="tab-uns" hidden>
+    <h2>Finding structure without answers</h2>
+    <p class="def">The data has no labels at all. The model looks for patterns on its own, here by grouping points that sit close together (k-means clustering).</p>
+    <canvas id="uns-cv" aria-label="Scatter plot of unlabeled points being grouped into clusters"></canvas>
+    <div class="controls">
+      <button class="btn primary" id="uns-run">Find groups</button>
+      <button class="btn" id="uns-step">Step</button>
+      <button class="btn" id="uns-new">New data</button>
+      <label class="range">Groups <input type="range" id="uns-k" min="2" max="5" value="3"><output id="uns-kout">3</output></label>
+    </div>
+    <p class="status" id="uns-status" aria-live="polite"></p>
+    <p class="note" id="uns-note"></p>
+  </section>
+
+  <!-- REINFORCEMENT -->
+  <section class="panel" id="panel-rl" role="tabpanel" aria-labelledby="tab-rl" hidden>
+    <h2>Learning from rewards by trial and error</h2>
+    <p class="def">An agent takes actions and gets rewards or penalties. Nobody tells it the right move, so it must discover which choices pay off over time (Q-learning).</p>
+    <canvas id="rl-cv" aria-label="Grid world where an agent learns a path to the goal while avoiding pits"></canvas>
+    <canvas id="rl-spark" class="spark" aria-label="Reward per episode"></canvas>
+    <div class="controls">
+      <button class="btn primary" id="rl-run">Start learning</button>
+      <button class="btn" id="rl-speed">Speed: Slow</button>
+      <button class="btn" id="rl-best">Watch best path</button>
+      <button class="btn" id="rl-reset">Reset</button>
+    </div>
+    <p class="status" id="rl-status" aria-live="polite"></p>
+    <p class="note" id="rl-note"></p>
+  </section>
+
+  <section class="compare">
+    <h2>Side by side</h2>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr><th></th><th data-p="sup">Supervised</th><th data-p="uns">Unsupervised</th><th data-p="rl">Reinforcement</th></tr>
+        </thead>
+        <tbody>
+          <tr><th scope="row">Learns from</th>
+            <td data-p="sup">Examples that come with the right answer (labels)</td>
+            <td data-p="uns">Raw data with no answers</td>
+            <td data-p="rl">Rewards and penalties after actions</td></tr>
+          <tr><th scope="row">Goal</th>
+            <td data-p="sup">Predict the label for new data</td>
+            <td data-p="uns">Discover structure, such as groups</td>
+            <td data-p="rl">Pick actions that earn the most reward over time</td></tr>
+          <tr><th scope="row">Feedback</th>
+            <td data-p="sup">Immediate: each guess is checked against its label</td>
+            <td data-p="uns">None from outside; the model judges its own fit</td>
+            <td data-p="rl">Delayed: a reward may arrive many steps later</td></tr>
+          <tr><th scope="row">Typical uses</th>
+            <td data-p="sup">Spam filters, price prediction, image classification</td>
+            <td data-p="uns">Customer segments, anomaly detection, topic discovery</td>
+            <td data-p="rl">Game playing, robot control, recommendation tuning</td></tr>
+          <tr><th scope="row">Demo above</th>
+            <td data-p="sup">Draws a boundary between two labeled groups</td>
+            <td data-p="uns">Groups unlabeled points around centers</td>
+            <td data-p="rl">An agent finds a safe path to the goal</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<script>
+const $ = s => document.querySelector(s);
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+function setup(cv, w, h){
+  const d = Math.min(window.devicePixelRatio || 1, 2);
+  cv.width = w*d; cv.height = h*d;
+  const c = cv.getContext('2d'); c.scale(d, d); return c;
+}
+function gauss(){ return Math.sqrt(-2*Math.log(1-Math.random()))*Math.cos(2*Math.PI*Math.random()); }
+function canvasXY(cv, e, W, H){
+  const r = cv.getBoundingClientRect();
+  return {x:(e.clientX-r.left)*W/r.width, y:(e.clientY-r.top)*H/r.height};
+}
+function drawShape(ctx, x, y, shape, color, r=6.5){
+  ctx.fillStyle = color; ctx.strokeStyle = css('--surface'); ctx.lineWidth = 2;
+  ctx.beginPath();
+  if(shape === 'circle') ctx.arc(x, y, r, 0, Math.PI*2);
+  else ctx.rect(x-r, y-r, r*2, r*2);
+  ctx.fill(); ctx.stroke();
+}
+const W = 480, H = 320;
+
+/* ---------------- SUPERVISED ---------------- */
+const Sup = (() => {
+  const cv = $('#sup-cv'), ctx = setup(cv, W, H);
+  let pts, w, b, trained, training, stepN, raf, tests = [];
+  const sig = z => 1/(1+Math.exp(-z));
+  const nx = x => (x - W/2)/(W/2), ny = y => (y - H/2)/(H/2);
+  const prob = (x, y) => sig(w[0]*nx(x) + w[1]*ny(y) + b);
+
+  function gen(){
+    pts = [];
+    for(let i=0;i<22;i++) pts.push({x:140+gauss()*42, y:170+gauss()*44, lab:0});
+    for(let i=0;i<22;i++) pts.push({x:340+gauss()*42, y:150+gauss()*44, lab:1});
+    pts.forEach(p => { p.x = Math.max(14, Math.min(W-14, p.x)); p.y = Math.max(14, Math.min(H-14, p.y)); });
+    w = [0.1, -0.9]; b = 0.3; trained = false; training = false; stepN = 0; tests = [];
+    cancelAnimationFrame(raf);
+    $('#sup-train').disabled = false; $('#sup-train').textContent = 'Train the model';
+    $('#sup-status').textContent = 'Every point already has a label. The model has not learned anything yet.';
+    $('#sup-note').textContent = '';
+    draw();
+  }
+  function metrics(){
+    let loss = 0, ok = 0;
+    pts.forEach(p => {
+      const q = Math.min(Math.max(prob(p.x, p.y), 1e-6), 1-1e-6);
+      loss += -(p.lab ? Math.log(q) : Math.log(1-q));
+      if((q > .5 ? 1 : 0) === p.lab) ok++;
+    });
+    return {loss: loss/pts.length, acc: Math.round(100*ok/pts.length)};
+  }
+  function gd(){
+    let gw0 = 0, gw1 = 0, gb = 0;
+    pts.forEach(p => {
+      const e = prob(p.x, p.y) - p.lab;
+      gw0 += e*nx(p.x); gw1 += e*ny(p.y); gb += e;
+    });
+    const n = pts.length, lr = 1.5;
+    w[0] -= lr*gw0/n; w[1] -= lr*gw1/n; b -= lr*gb/n;
+  }
+  function draw(){
+    ctx.clearRect(0, 0, W, H);
+    const A = css('--c1'), B = css('--c0');
+    if(trained || stepN > 0){
+      const s = 10;
+      for(let x=0; x<W; x+=s) for(let y=0; y<H; y+=s){
+        ctx.globalAlpha = .12;
+        ctx.fillStyle = prob(x+s/2, y+s/2) > .5 ? B : A;
+        ctx.fillRect(x, y, s, s);
+      }
+      ctx.globalAlpha = 1;
+      // boundary: w0*X + w1*Y + b = 0 in normalized coords
+      ctx.strokeStyle = css('--ink'); ctx.lineWidth = 2.5; ctx.beginPath();
+      if(Math.abs(w[1]) > Math.abs(w[0])){
+        const f = X => -(b + w[0]*X)/w[1];
+        ctx.moveTo(0, H/2 + f(-1)*H/2); ctx.lineTo(W, H/2 + f(1)*H/2);
+      } else {
+        const g = Y => -(b + w[1]*Y)/w[0];
+        ctx.moveTo(W/2 + g(-1)*W/2, 0); ctx.lineTo(W/2 + g(1)*W/2, H);
+      }
+      ctx.stroke();
+    }
+    pts.forEach(p => drawShape(ctx, p.x, p.y, p.lab ? 'square' : 'circle', p.lab ? B : A));
+    tests.forEach(t => {
+      const q = prob(t.x, t.y), lab = q > .5 ? 1 : 0;
+      ctx.strokeStyle = css('--ink'); ctx.lineWidth = 2; ctx.setLineDash([4, 3]);
+      ctx.beginPath(); ctx.arc(t.x, t.y, 13, 0, Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
+      drawShape(ctx, t.x, t.y, lab ? 'square' : 'circle', lab ? B : A, 6);
+    });
+  }
+  function status(){
+    const m = metrics();
+    $('#sup-status').textContent = `Step ${stepN} · error ${m.loss.toFixed(2)} · ${m.acc}% of training points correct`;
+  }
+  function tick(){
+    if(!training) return;
+    for(let i=0;i<5;i++) gd();
+    stepN += 5; draw(); status();
+    if(stepN >= 500){
+      training = false; trained = true; $('#sup-train').disabled = false; $('#sup-train').textContent = 'Train again';
+      const m = metrics();
+      $('#sup-status').textContent = `Trained. ${m.acc}% of training points are on the correct side.`;
+      $('#sup-note').textContent = 'Tap the plot to ask the model about a new point.';
+    } else raf = requestAnimationFrame(tick);
+  }
+  $('#sup-train').onclick = () => {
+    w = [0.1, -0.9]; b = 0.3; stepN = 0; tests = []; trained = false; training = true;
+    $('#sup-train').disabled = true; $('#sup-train').textContent = 'Training…';
+    $('#sup-note').textContent = 'Each step nudges the line to reduce mistakes against the known labels.';
+    cancelAnimationFrame(raf); raf = requestAnimationFrame(tick);
+  };
+  $('#sup-new').onclick = gen;
+  cv.addEventListener('pointerdown', e => {
+    if(!trained){ $('#sup-note').textContent = 'Train the model first, then tap to test a new point.'; return; }
+    const p = canvasXY(cv, e, W, H);
+    tests.push(p); if(tests.length > 6) tests.shift();
+    const q = prob(p.x, p.y), lab = q > .5 ? 'B' : 'A', conf = Math.round(100*Math.max(q, 1-q));
+    $('#sup-note').textContent = `New point: the model predicts Label ${lab} (${conf}% confident). It never saw this point.`;
+    draw();
+  });
+  return {gen, draw, stop(){ training = false; cancelAnimationFrame(raf); if(!trained && stepN>0){ $('#sup-train').disabled=false; $('#sup-train').textContent='Train the model'; } }};
+})();
+
+/* ---------------- UNSUPERVISED ---------------- */
+const Uns = (() => {
+  const cv = $('#uns-cv'), ctx = setup(cv, W, H);
+  let pts, k = 3, cents, asg, next, finished, timer, stepNo, msg;
+  const d2 = (a, b) => (a.x-b.x)**2 + (a.y-b.y)**2;
+  const colors = () => [css('--c0'), css('--c1'), css('--c2'), css('--c3'), css('--c4')];
+
+  function reset(){
+    clearInterval(timer); timer = null;
+    cents = null; asg = null; next = 'assign'; finished = false; stepNo = 0;
+    msg = 'These points have no labels. Press Find groups.';
+    $('#uns-run').textContent = 'Find groups'; $('#uns-step').disabled = false; $('#uns-run').disabled = false;
+    $('#uns-note').textContent = '';
+    paint();
+  }
+  function gen(){
+    const centers = [[110,95],[350,90],[240,245],[400,250],[90,250]];
+    pts = [];
+    centers.slice(0, 3).forEach(c => { for(let i=0;i<22;i++) pts.push({x:c[0]+gauss()*30, y:c[1]+gauss()*28}); });
+    pts.forEach(p => { p.x = Math.max(12, Math.min(W-12, p.x)); p.y = Math.max(12, Math.min(H-12, p.y)); });
+    reset();
+  }
+  function initCents(){
+    cents = [{...pts[Math.floor(Math.random()*pts.length)]}];
+    while(cents.length < k){
+      const d = pts.map(p => Math.min(...cents.map(c => d2(p, c))));
+      let r = Math.random()*d.reduce((a, b) => a+b, 0), i = 0;
+      for(; i<d.length; i++){ r -= d[i]; if(r <= 0) break; }
+      cents.push({...pts[Math.min(i, pts.length-1)]});
+    }
+  }
+  function assign(){
+    asg = pts.map(p => { let best = 0, bd = Infinity; cents.forEach((c, i) => { const d = d2(p, c); if(d < bd){ bd = d; best = i; } }); return best; });
+  }
+  function update(){
+    let moved = 0;
+    cents = cents.map((c, i) => {
+      const m = pts.filter((_, j) => asg[j] === i);
+      if(!m.length) return c;
+      const x = m.reduce((s, p) => s+p.x, 0)/m.length, y = m.reduce((s, p) => s+p.y, 0)/m.length;
+      moved = Math.max(moved, Math.hypot(x-c.x, y-c.y)); return {x, y};
+    });
+    return moved < 0.5;
+  }
+  function step(){
+    if(finished) return;
+    stepNo++;
+    if(!cents){ initCents(); msg = `Placed ${k} starting centers on random points.`; }
+    else if(next === 'assign'){ assign(); next = 'update'; msg = 'Each point joined its nearest center.'; }
+    else {
+      const conv = update(); next = 'assign';
+      msg = conv ? 'Settled. The centers stopped moving, so these are the groups.' : 'Moved each center to the middle of its group.';
+      if(conv) finish();
+    }
+    paint();
+  }
+  function finish(){
+    finished = true; clearInterval(timer); timer = null;
+    $('#uns-run').textContent = 'Find groups'; $('#uns-run').disabled = true; $('#uns-step').disabled = true;
+    $('#uns-note').textContent = 'Nobody named these groups. The model found them from distance alone. Try a different number of groups.';
+  }
+  function paint(){
+    ctx.clearRect(0, 0, W, H);
+    const col = colors();
+    if(asg && next === 'update'){
+      ctx.globalAlpha = .28; ctx.lineWidth = 1;
+      pts.forEach((p, i) => { ctx.strokeStyle = col[asg[i]]; ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(cents[asg[i]].x, cents[asg[i]].y); ctx.stroke(); });
+      ctx.globalAlpha = 1;
+    }
+    pts.forEach((p, i) => {
+      ctx.fillStyle = asg ? col[asg[i]] : css('--muted'); ctx.globalAlpha = asg ? 1 : .75;
+      ctx.strokeStyle = css('--surface'); ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(p.x, p.y, 6, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+    });
+    ctx.globalAlpha = 1;
+    if(cents) cents.forEach((c, i) => {
+      ctx.fillStyle = col[i]; ctx.strokeStyle = css('--ink'); ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(c.x, c.y, 11, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = css('--ink'); ctx.beginPath(); ctx.arc(c.x, c.y, 3, 0, Math.PI*2); ctx.fill();
+    });
+    $('#uns-status').textContent = stepNo ? `Step ${stepNo} · ${msg}` : msg;
+  }
+  $('#uns-run').onclick = () => {
+    if(timer){ clearInterval(timer); timer = null; $('#uns-run').textContent = 'Find groups'; return; }
+    $('#uns-run').textContent = 'Pause'; step(); if(!finished) timer = setInterval(step, 750);
+  };
+  $('#uns-step').onclick = () => { if(timer){ clearInterval(timer); timer = null; $('#uns-run').textContent = 'Find groups'; } step(); };
+  $('#uns-new').onclick = gen;
+  $('#uns-k').oninput = e => { k = +e.target.value; $('#uns-kout').textContent = k; reset(); };
+  return {gen, paint, stop(){ clearInterval(timer); timer = null; if(!finished) $('#uns-run').textContent = 'Find groups'; }};
+})();
+
+/* ---------------- REINFORCEMENT ---------------- */
+const RL = (() => {
+  const cv = $('#rl-cv'), ctx = setup(cv, W, H);
+  const sp = $('#rl-spark'), sctx = setup(sp, W, 56);
+  const COLS = 6, ROWS = 4, CS = 80;
+  const start = {c:0, r:3}, goal = {c:5, r:0};
+  const pits = [[1,1],[3,2],[4,1]];
+  const isPit = (c, r) => pits.some(p => p[0] === c && p[1] === r);
+  const DIR = [[0,-1],[1,0],[0,1],[-1,0]];
+  const speeds = [{name:'Slow', ms:120, n:1}, {name:'Fast', ms:0, n:4}, {name:'Turbo', ms:0, n:50}];
+  let Q, agent, ep, steps, epRew, hist, lastRew, running, greedy, spd = 0, lastT = 0, raf, note;
+
+  const epsNow = () => Math.max(0.05, Math.pow(0.97, ep));
+  function reset(){
+    cancelAnimationFrame(raf);
+    Q = Array.from({length:ROWS}, () => Array.from({length:COLS}, () => [0,0,0,0]));
+    agent = {...start}; ep = 0; steps = 0; epRew = 0; hist = []; lastRew = null; running = false; greedy = false;
+    $('#rl-run').textContent = 'Start learning'; $('#rl-best').disabled = false;
+    note = 'The agent starts knowing nothing. Reaching the star earns +10, falling in a pit costs 10, every step costs a little.';
+    render();
+  }
+  function step(){
+    const {c, r} = agent;
+    let a;
+    if(!greedy && Math.random() < epsNow()) a = Math.floor(Math.random()*4);
+    else {
+      const q = Q[r][c], m = Math.max(...q), best = q.map((v, i) => v === m ? i : -1).filter(i => i >= 0);
+      a = best[Math.floor(Math.random()*best.length)];
+    }
+    let nc = c + DIR[a][0], nr = r + DIR[a][1];
+    if(nc < 0 || nc >= COLS || nr < 0 || nr >= ROWS){ nc = c; nr = r; }
+    let rew = -0.1, done = false, won = false;
+    if(nc === goal.c && nr === goal.r){ rew = 10; done = true; won = true; }
+    else if(isPit(nc, nr)){ rew = -10; done = true; }
+    if(!greedy){
+      const target = rew + (done ? 0 : 0.9*Math.max(...Q[nr][nc]));
+      Q[r][c][a] += 0.5*(target - Q[r][c][a]);
+    }
+    agent = {c:nc, r:nr}; epRew += rew; steps++;
+    if(done || steps >= (greedy ? 20 : 50)) endEpisode(won);
+  }
+  function endEpisode(won){
+    if(greedy){
+      greedy = false; running = false; $('#rl-run').textContent = 'Start learning'; $('#rl-best').disabled = false;
+      note = won ? `Best path found: the agent reached the star in ${steps} moves using only what it learned.` : 'The agent did not reach the star yet. Let it learn longer.';
+      steps = 0; epRew = 0; return;
+    }
+    hist.push(epRew); lastRew = epRew; ep++;
+    if(won && ep < 8) note = 'It reached the star by luck. The reward flows backward to the moves that led there.';
+    agent = {...start}; steps = 0; epRew = 0;
+  }
+  function loop(t){
+    if(!running) return;
+    const s = greedy ? {ms:260, n:1} : speeds[spd];
+    if(t - lastT >= s.ms){ lastT = t; for(let i=0;i<s.n && running;i++) step(); render(); }
+    raf = requestAnimationFrame(loop);
+  }
+  function cellCenter(c, r){ return [c*CS + CS/2, r*CS + CS/2]; }
+  function arrow(cx, cy, d){
+    const dx = DIR[d][0], dy = DIR[d][1], L = 22, px = -dy, py = dx;
+    const x2 = cx + dx*L/2, y2 = cy + dy*L/2;
+    ctx.strokeStyle = css('--ink'); ctx.fillStyle = css('--ink'); ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(cx - dx*L/2, cy - dy*L/2); ctx.lineTo(x2, y2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x2 + dx*3, y2 + dy*3);
+    ctx.lineTo(x2 - dx*6 + px*6, y2 - dy*6 + py*6); ctx.lineTo(x2 - dx*6 - px*6, y2 - dy*6 - py*6); ctx.closePath(); ctx.fill();
+  }
+  function drawGrid(){
+    ctx.clearRect(0, 0, W, H);
+    const rl = css('--rl'), bad = css('--c3'), good = css('--c2');
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = '600 15px system-ui,sans-serif';
+    for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+      const x = c*CS, y = r*CS, special = isPit(c, r) || (c === goal.c && r === goal.r);
+      if(isPit(c, r)){ ctx.fillStyle = bad; ctx.globalAlpha = .28; ctx.fillRect(x, y, CS, CS); ctx.globalAlpha = 1; ctx.fillStyle = bad; ctx.fillText('−10', x+CS/2, y+CS/2); }
+      else if(c === goal.c && r === goal.r){ ctx.fillStyle = good; ctx.globalAlpha = .3; ctx.fillRect(x, y, CS, CS); ctx.globalAlpha = 1; ctx.fillStyle = good; ctx.fillText('★ +10', x+CS/2, y+CS/2); }
+      else {
+        const q = Q[r][c], m = Math.max(...q);
+        if(m > 0){ ctx.fillStyle = rl; ctx.globalAlpha = Math.min(m/10, 1)*.5; ctx.fillRect(x, y, CS, CS); }
+        else if(m < 0){ ctx.fillStyle = bad; ctx.globalAlpha = Math.min(-m/10, 1)*.3; ctx.fillRect(x, y, CS, CS); }
+        ctx.globalAlpha = 1;
+        if(q.some(v => v !== 0)){ arrow(x+CS/2, y+CS/2, q.indexOf(m)); }
+        if(c === start.c && r === start.r && !q.some(v => v !== 0)){ ctx.fillStyle = css('--muted'); ctx.font = '13px system-ui,sans-serif'; ctx.fillText('start', x+CS/2, y+CS-14); ctx.font = '600 15px system-ui,sans-serif'; }
+      }
+    }
+    ctx.strokeStyle = css('--grid'); ctx.lineWidth = 1; ctx.beginPath();
+    for(let c=0;c<=COLS;c++){ ctx.moveTo(c*CS+.5, 0); ctx.lineTo(c*CS+.5, H); }
+    for(let r=0;r<=ROWS;r++){ ctx.moveTo(0, r*CS+.5); ctx.lineTo(W, r*CS+.5); }
+    ctx.stroke();
+    const [ax, ay] = cellCenter(agent.c, agent.r);
+    ctx.fillStyle = rl; ctx.strokeStyle = css('--surface'); ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(ax, ay, 15, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = css('--surface'); ctx.beginPath(); ctx.arc(ax-5, ay-3, 2.5, 0, Math.PI*2); ctx.arc(ax+5, ay-3, 2.5, 0, Math.PI*2); ctx.fill();
+  }
+  function drawSpark(){
+    sctx.clearRect(0, 0, W, 56);
+    const h = 56, yv = v => h - 6 - (Math.max(-10, Math.min(10, v)) + 10)/20*(h - 12);
+    sctx.strokeStyle = css('--grid'); sctx.lineWidth = 1; sctx.beginPath(); sctx.moveTo(0, yv(0)); sctx.lineTo(W, yv(0)); sctx.stroke();
+    sctx.fillStyle = css('--muted'); sctx.font = '11px system-ui,sans-serif'; sctx.textAlign = 'left'; sctx.textBaseline = 'top';
+    if(!hist.length){ sctx.fillText('Reward per episode will appear here', 8, 6); return; }
+    sctx.fillText('Reward per episode (smoothed): going up means it is learning', 8, 4);
+    const data = hist.slice(-150).map((_, i, arr) => { const s = arr.slice(Math.max(0, i-9), i+1); return s.reduce((a, b) => a+b, 0)/s.length; });
+    sctx.strokeStyle = css('--rl'); sctx.lineWidth = 2; sctx.beginPath();
+    data.forEach((v, i) => { const x = data.length > 1 ? i/(data.length-1)*(W-16) + 8 : 8; i ? sctx.lineTo(x, yv(v)) : sctx.moveTo(x, yv(v)); });
+    sctx.stroke();
+  }
+  function render(){
+    drawGrid(); drawSpark();
+    $('#rl-status').textContent = greedy ? 'Following the best known move from every cell…'
+      : `Episode ${ep} · exploring ${Math.round(epsNow()*100)}% of moves` + (lastRew !== null ? ` · last reward ${lastRew.toFixed(1)}` : '');
+    $('#rl-note').textContent = note;
+  }
+  $('#rl-run').onclick = () => {
+    if(greedy) return;
+    if(running){ running = false; cancelAnimationFrame(raf); $('#rl-run').textContent = 'Start learning'; return; }
+    running = true; $('#rl-run').textContent = 'Pause';
+    note = 'Purple cells are worth more to the agent. Arrows show its current favorite move. Try Fast or Turbo.';
+    raf = requestAnimationFrame(loop);
+  };
+  $('#rl-speed').onclick = () => { spd = (spd+1) % speeds.length; $('#rl-speed').textContent = 'Speed: ' + speeds[spd].name; };
+  $('#rl-best').onclick = () => {
+    cancelAnimationFrame(raf); running = true; greedy = true; agent = {...start}; steps = 0; epRew = 0;
+    $('#rl-run').textContent = 'Start learning'; $('#rl-best').disabled = true;
+    raf = requestAnimationFrame(loop);
+  };
+  $('#rl-reset').onclick = reset;
+  return {reset, render, pause(){ if(running && !greedy){ running = false; cancelAnimationFrame(raf); $('#rl-run').textContent = 'Start learning'; } }};
+})();
+
+/* ---------------- TABS ---------------- */
+const panels = {sup:Sup, uns:Uns, rl:RL};
+function show(p){
+  document.body.dataset.active = p;
+  Sup.stop(); Uns.stop(); RL.pause();
+  document.querySelectorAll('.tab').forEach(t => t.setAttribute('aria-selected', t.dataset.p === p));
+  Object.keys(panels).forEach(k => { $('#panel-'+k).hidden = k !== p; });
+}
+document.querySelectorAll('.tab').forEach(t => {
+  t.onclick = () => show(t.dataset.p);
+  t.onkeydown = e => {
+    const order = ['sup','uns','rl'], i = order.indexOf(t.dataset.p);
+    if(e.key === 'ArrowRight' || e.key === 'ArrowLeft'){
+      const n = order[(i + (e.key === 'ArrowRight' ? 1 : 2)) % 3]; show(n); $('#tab-'+n).focus();
+    }
+  };
+});
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { Sup.draw(); Uns.paint(); RL.render(); });
+
+Sup.gen(); Uns.gen(); RL.reset();
+</script>
+</body>
+</html>
