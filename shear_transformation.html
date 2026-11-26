@@ -1,0 +1,197 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shear Transformation Visualizer</title>
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;padding:20px;background:#0b1220;color:#edf4ff;
+ font-family:Arial,sans-serif
+}
+.app{max-width:1100px;margin:auto}
+h1{text-align:center;font-size:30px}
+.sub{text-align:center;color:#a9bad2}
+.panel{
+ background:#17263c;border:1px solid #344965;
+ padding:17px;border-radius:15px;margin-top:16px
+}
+.grid{
+ display:grid;grid-template-columns:1fr 1fr;gap:15px
+}
+canvas{
+ width:100%;height:390px;background:#0a1628;
+ border-radius:12px;display:block
+}
+input{width:100%;accent-color:#4dc8ff}
+.control{margin:18px 0}
+.value{font-size:25px;color:#65d4ff;font-weight:bold}
+.math{
+ background:#0a172a;padding:15px;border-radius:10px;
+ line-height:1.9;margin-top:12px;overflow-wrap:anywhere
+}
+button{
+ padding:11px 17px;border:0;border-radius:9px;
+ background:#2389cb;color:white;font-weight:bold;
+ cursor:pointer;margin:5px 5px 5px 0
+}
+button.alt{background:#40516c}
+@media(max-width:750px){.grid{grid-template-columns:1fr}canvas{height:320px}}
+</style>
+</head>
+<body>
+<div class="app">
+<h1>Shear Transformation Simulator</h1>
+<p class="sub">See how a matrix changes the shape of a square into a parallelogram.</p>
+
+<div class="grid">
+ <div class="panel">
+  <h3>Original shape</h3>
+  <canvas id="before"></canvas>
+  <p>Original square: vertices (0,0), (2,0), (2,2), (0,2)</p>
+ </div>
+ <div class="panel">
+  <h3>After shear transformation</h3>
+  <canvas id="after"></canvas>
+  <p id="shapeText">Transformed square</p>
+ </div>
+</div>
+
+<div class="panel">
+ <h2>Control the shear factor (k)</h2>
+ <div class="control">
+  <div>Shear factor: <span class="value" id="kValue">1.0</span></div>
+  <input id="k" type="range" min="-2" max="2" step="0.1" value="1">
+ </div>
+ <button onclick="setK(0)">No shear</button>
+ <button onclick="setK(1)">Positive shear</button>
+ <button onclick="setK(-1)">Negative shear</button>
+ <button onclick="setK(2)">Strong shear</button>
+ <button class="alt" onclick="setK(0.5)">Small shear</button>
+
+ <div class="math" id="calculation"></div>
+</div>
+
+<div class="panel">
+ <h2>Geometric interpretation</h2>
+ <p>Horizontal shear matrix:</p>
+ <div class="math">
+  S = [ 1 &nbsp; k ]<br>
+  &nbsp;&nbsp;&nbsp;&nbsp;[ 0 &nbsp; 1 ]<br><br>
+  x' = x + ky<br>
+  y' = y
+ </div>
+ <p>The bottom edge remains fixed because its points have y = 0. The top edge moves horizontally because its points have y = 2.</p>
+ <p><b>Important:</b> The area remains unchanged. The determinant is:</p>
+ <div class="math">det(S) = (1 × 1) - (0 × k) = 1</div>
+</div>
+</div>
+
+<script>
+const before=document.getElementById("before");
+const after=document.getElementById("after");
+const slider=document.getElementById("k");
+
+function setup(canvas){
+ const rect=canvas.getBoundingClientRect();
+ const dpr=window.devicePixelRatio||1;
+ canvas.width=rect.width*dpr;
+ canvas.height=rect.height*dpr;
+ const ctx=canvas.getContext("2d");
+ ctx.setTransform(dpr,0,0,dpr,0,0);
+ return {ctx,w:rect.width,h:rect.height};
+}
+
+function draw(canvas,transformed,k){
+ const {ctx,w,h}=setup(canvas);
+ ctx.clearRect(0,0,w,h);
+ const scale=Math.min(w,h)/6;
+ const ox=w/2-0.4*scale,oy=h/2+1.2*scale;
+ function p(v){
+  return [ox+v[0]*scale,oy-v[1]*scale];
+ }
+
+ // Grid
+ ctx.strokeStyle="#203651";ctx.lineWidth=1;
+ for(let i=-5;i<=7;i++){
+  let [x]=p([i,0]),[,y]=p([0,i]);
+  ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();
+ }
+ // Axes
+ ctx.strokeStyle="#879bb7";ctx.lineWidth=1.5;
+ let [x0,y0]=p([0,0]);
+ ctx.beginPath();ctx.moveTo(0,y0);ctx.lineTo(w,y0);ctx.stroke();
+ ctx.beginPath();ctx.moveTo(x0,0);ctx.lineTo(x0,h);ctx.stroke();
+
+ const original=[[0,0],[2,0],[2,2],[0,2]];
+ const vertices=transformed
+  ?original.map(([x,y])=>[x+k*y,y]):original;
+
+ function polygon(points,fill,stroke){
+  ctx.beginPath();
+  points.forEach((v,i)=>{
+   const [x,y]=p(v);
+   if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);
+  });
+  ctx.closePath();
+  ctx.fillStyle=fill;ctx.fill();
+  ctx.strokeStyle=stroke;ctx.lineWidth=3;ctx.stroke();
+ }
+ polygon(vertices,transformed?"rgba(255,176,76,.18)":"rgba(68,178,255,.17)",
+ transformed?"#ffb04c":"#44b2ff");
+
+ // Vertices
+ vertices.forEach((v,i)=>{
+  const [x,y]=p(v);
+  ctx.fillStyle=transformed?"#ffb04c":"#44b2ff";
+  ctx.beginPath();ctx.arc(x,y,5,0,Math.PI*2);ctx.fill();
+  ctx.font="12px Arial";
+  ctx.fillText(["O","P","Q","R"][i],x+8,y-8);
+ });
+
+ // Show movement of top-right point
+ if(transformed){
+  const [sx,sy]=p([2,2]),[ex,ey]=p([2+2*k,2]);
+  ctx.strokeStyle="#ff5f87";ctx.lineWidth=2;
+  ctx.setLineDash([5,4]);
+  ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(ex,ey);ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle="#ff5f87";
+  ctx.beginPath();ctx.arc(ex,ey,5,0,Math.PI*2);ctx.fill();
+  ctx.font="bold 12px Arial";
+  ctx.fillText("Q' ("+(2+2*k).toFixed(1)+", 2)",ex+8,ey+18);
+ }
+}
+
+function update(){
+ const k=Number(slider.value);
+ document.getElementById("kValue").textContent=k.toFixed(1);
+ draw(before,false,0);
+ draw(after,true,k);
+
+ const x=2,y=2;
+ const newX=x+k*y;
+ document.getElementById("shapeText").textContent=
+  "Top-right point: (2,2) → ("+newX.toFixed(1)+",2)";
+
+ document.getElementById("calculation").innerHTML=
+  "<b>Matrix multiplication:</b><br>"+
+  "S = [ 1 &nbsp; "+k.toFixed(1)+" ]<br>"+
+  "&nbsp;&nbsp;&nbsp;&nbsp;[ 0 &nbsp; 1 ]<br><br>"+
+  "Original point = (2,2)<br>"+
+  "x' = 2 + ("+k.toFixed(1)+" × 2) = <b>"+newX.toFixed(1)+"</b><br>"+
+  "y' = 2<br><br>"+
+  "<b>New point = ("+newX.toFixed(1)+", 2)</b><br>"+
+  "Determinant = 1<br>Area before = 4 square units<br>"+
+  "Area after = 4 square units";
+}
+function setK(v){slider.value=v;update();}
+slider.addEventListener("input",update);
+window.addEventListener("resize",update);
+update();
+</script>
+</body>
+</html>
