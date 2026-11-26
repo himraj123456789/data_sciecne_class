@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Regression vs Classification — Interactive Simulation</title>
+<style>
+  :root {
+    --ink: #0f172a;
+    --muted: #64748b;
+    --line: #e2e8f0;
+    --blue: #2563eb;
+    --violet: #7c3aed;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: #eef2f7;
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+  }
+  .app {
+    display: flex;
+    gap: 16px;
+    padding: 16px;
+    height: 100vh;
+    max-width: 1240px;
+    margin: 0 auto;
+  }
+
+  /* ---------- visualization ---------- */
+  .viz {
+    position: relative;
+    flex: 1;
+    min-width: 0;
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 1px 3px rgba(15,23,42,.08), 0 18px 40px -24px rgba(15,23,42,.35);
+    overflow: hidden;
+  }
+  canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; cursor: crosshair; }
+  .hint {
+    position: absolute; left: 16px; right: 16px; bottom: 10px;
+    text-align: center; font-size: 11.5px; color: #94a3b8;
+    pointer-events: none;
+  }
+
+  /* ---------- panel ---------- */
+  .panel {
+    width: 330px;
+    flex: 0 0 330px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow-y: auto;
+    padding-right: 2px;
+  }
+  .seg {
+    display: flex; background: #dde5ee; padding: 4px; border-radius: 13px; gap: 4px;
+  }
+  .seg button {
+    flex: 1; border: 0; background: transparent; padding: 10px 8px;
+    border-radius: 10px; font: inherit; font-weight: 700; font-size: 13px;
+    color: var(--muted); cursor: pointer; transition: background .15s, color .15s, box-shadow .15s;
+  }
+  .seg button.active { background: #fff; color: var(--ink); box-shadow: 0 1px 4px rgba(15,23,42,.14); }
+
+  .card, .explain, .row {
+    background: #fff;
+    border-radius: 15px;
+    box-shadow: 0 1px 3px rgba(15,23,42,.07);
+  }
+  .card { padding: 14px 16px; }
+  .card-label {
+    font-size: 10.5px; letter-spacing: .09em; text-transform: uppercase;
+    color: var(--muted); font-weight: 800;
+  }
+  .big {
+    font-size: 36px; font-weight: 800; letter-spacing: -.02em;
+    margin: 6px 0 2px; font-variant-numeric: tabular-nums;
+    transition: color .15s;
+  }
+  .sub { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+  .explain { padding: 14px 16px; font-size: 13.5px; line-height: 1.55; color: #334155; }
+  .explain p { margin: 0; }
+  .explain strong { color: var(--ink); }
+  .explain em { color: var(--violet); font-style: normal; font-weight: 700; }
+
+  .slider-wrap { padding: 12px 16px; background: #fff; border-radius: 15px; box-shadow: 0 1px 3px rgba(15,23,42,.07); }
+  .slider-top { display: flex; justify-content: space-between; align-items: baseline; font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+  .slider-top b { color: var(--ink); font-variant-numeric: tabular-nums; font-size: 13px; }
+  input[type=range] {
+    width: 100%; -webkit-appearance: none; appearance: none; height: 5px;
+    border-radius: 99px; background: #e2e8f0; outline: none; margin: 4px 0;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%;
+    background: var(--blue); border: 3px solid #fff; cursor: grab;
+    box-shadow: 0 1px 4px rgba(37,99,235,.5);
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--blue); border: 3px solid #fff; cursor: grab;
+  }
+
+  .row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 14px; font-size: 12.5px; color: var(--muted);
+  }
+  .row .spacer { flex: 1; }
+  .btn {
+    border: 1px solid var(--line); background: #fff; border-radius: 10px;
+    padding: 9px 14px; font: inherit; font-size: 13px; font-weight: 700;
+    cursor: pointer; color: var(--ink); transition: background .15s;
+  }
+  .btn:hover { background: #f8fafc; }
+  .chip {
+    border: 1px solid var(--line); background: #fff; border-radius: 999px;
+    padding: 5px 13px; font: inherit; font-size: 12px; font-weight: 800;
+    cursor: pointer; color: var(--muted); transition: all .15s;
+  }
+  .chip[data-brush="0"].active { background: #fee2e2; color: #b91c1c; border-color: #fecaca; }
+  .chip[data-brush="1"].active { background: #dcfce7; color: #15803d; border-color: #bbf7d0; }
+
+  @media (max-width: 860px) {
+    .app { flex-direction: column; height: auto; padding: 12px; }
+    .viz { height: 62vh; flex: none; }
+    .panel { width: 100%; flex: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="viz">
+    <canvas id="canvas"></canvas>
+    <div class="hint" id="hint"></div>
+  </div>
+
+  <aside class="panel">
+    <div class="seg" id="modeSeg">
+      <button data-mode="regression" class="active">Regression</button>
+      <button data-mode="classification">Classification</button>
+    </div>
+
+    <div class="card">
+      <div class="card-label">Model output</div>
+      <div class="big" id="bigOut">—</div>
+      <div class="sub" id="subOut">—</div>
+    </div>
+
+    <div class="slider-wrap">
+      <div class="slider-top">
+        <span>Input: hours studied</span>
+        <b id="hoursLabel">5.0 h</b>
+      </div>
+      <input type="range" id="probe" min="0" max="100" value="50" step="0.5">
+    </div>
+
+    <div class="explain" id="explain"></div>
+
+    <div class="row" id="brushRow">
+      <span>Add point:</span>
+      <button class="chip" data-brush="0">Fail</button>
+      <button class="chip active" data-brush="1">Pass</button>
+    </div>
+
+    <div class="row">
+      <span>Click the plot to add a point</span>
+      <span class="spacer"></span>
+      <button class="btn" id="reset">Reset</button>
+    </div>
+  </aside>
+</div>
+
+<script>
+(() => {
+  'use strict';
+
+  /* ============================ setup ============================ */
+
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+  const viz = document.querySelector('.viz');
+
+  const PAD = { l: 66, r: 30, t: 44, b: 62 };
+  const CLASS_Y = [22, 78];            // plot-y for class 0 and class 1
+  const probToY = p => CLASS_Y[0] + p * (CLASS_Y[1] - CLASS_Y[0]);
+
+  let W = 0, H = 0;
+
+  const state = {
+    mode: 'regression',   // 'regression' | 'classification'
+    brush: 1,             // class being painted (classification mode)
+    probeX: 50,           // input feature, 0..100  (= 0..10 hours)
+    reg: [],              // {x, y}  y = exam score 0..100
+    cls: [],              // {x, y(0|1), j}
+  };
+
+  /* ============================ math ============================ */
+
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const sigmoid = z => 1 / (1 + Math.exp(-z));
+
+  // Ordinary least squares for y = m*x + b
+  function fitLine(pts) {
+    const n = pts.length;
+    if (n < 2) return null;
+    let sx = 0, sy = 0, sxx = 0, sxy = 0;
+    for (const { x, y } of pts) { sx += x; sy += y; sxx += x * x; sxy += x * y; }
+    const den = n * sxx - sx * sx;
+    if (Math.abs(den) < 1e-9) return null;
+    const m = (n * sxy - sx * sy) / den;
+    const b = (sy - m * sx) / n;
+    return { m, b };
+  }
+
+  // Logistic regression p = sigmoid(w*xn + b), xn = x/100, fitted by gradient descent
+  function fitLogistic(pts) {
+    let w = 0, b = 0;
+    const n = pts.length;
+    if (n === 0) return { w: 0, b: 0 };
+
+    const lr = 1.0, l2 = 0.1, iters = 1500;
+    for (let it = 0; it < iters; it++) {
+      let gw = 0, gb = 0;
+      for (const p of pts) {
+        const xn = p.x / 100;
+        const err = sigmoid(w * xn + b) - p.y;
+        gw += err * xn;
+        gb += err;
+      }
+      gw = gw / n + l2 * w;   // small L2 keeps the curve smooth
+      gb = gb / n;
+      w -= lr * gw;
+      b -= lr * gb;
+    }
+    return { w, b };
+  }
+
+  const probAt = (model, xd) => sigmoid(model.w * (xd / 100) + model.b);
+
+  /* ============================ data ============================ */
+
+  function seedData() {
+    state.reg = [];
+    for (let i = 0; i < 24; i++) {
+      const x = 4 + Math.random() * 92;
+      const y = clamp(6 + 0.85 * x + (Math.random() - 0.5) * 18, 2, 100);
+      state.reg.push({ x, y });
+    }
+
+    state.cls = [];
+    for (let i = 0; i < 20; i++) {
+      const x = 5 + Math.random() * 90;
+      const pPass = 1 / (1 + Math.exp(-(x - 50) / 14));
+      const y = Math.random() < pPass ? 1 : 0;
+      state.cls.push({ x, y, j: (Math.random() - 0.5) * 10 });
+    }
+  }
+
+  /* ============================ geometry ============================ */
+
+  function plotRect() {
+    return {
+      x: PAD.l,
+      y: PAD.t,
+      w: Math.max(20, W - PAD.l - PAD.r),
+      h: Math.max(20, H - PAD.t - PAD.b),
+    };
+  }
+  const xToPx = x => { const p = plotRect(); return p.x + (x / 100) * p.w; };
+  const yToPx = y => { const p = plotRect(); return p.y + p.h - (y / 100) * p.h; };
+
+  /* ============================ drawing primitives ============================ */
+
+  function dot(x, y, r, fill, stroke) {
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fillStyle = fill;
+    ctx.fill();
+    if (stroke) { ctx.lineWidth = 2; ctx.strokeStyle = stroke; ctx.stroke(); }
+  }
+
+  function square(x, y, r, fill, stroke) {
+    ctx.beginPath();
+    ctx.rect(x - r, y - r, r * 2, r * 2);
+    ctx.fillStyle = fill;
+    ctx.fill();
+    if (stroke) { ctx.lineWidth = 2; ctx.strokeStyle = stroke; ctx.stroke(); }
+  }
+
+  function clipPlot(p) {
+    ctx.beginPath();
+    ctx.rect(p.x, p.y, p.w, p.h);
+    ctx.clip();
+  }
+
+  /* ============================ drawing ============================ */
+
+  function drawShading(p, model) {
+    if (Math.abs(model.w) < 1e-6) return;
+    const bx = (-model.b / model.w) * 100;
+    if (bx < 0 || bx > 100) return;
+
+    const px = xToPx(bx);
+    ctx.save();
+    clipPlot(p);
+    ctx.fillStyle = 'rgba(239,68,68,.055)';
+    ctx.fillRect(p.x, p.y, px - p.x, p.h);
+    ctx.fillStyle = 'rgba(34,197,94,.055)';
+    ctx.fillRect(px, p.y, p.x + p.w - px, p.h);
+    ctx.restore();
+  }
+
+  function drawGrid(p) {
+    ctx.strokeStyle = '#eef2f7';
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 5; i++) {
+      const x = p.x + (i / 5) * p.w;
+      ctx.beginPath(); ctx.moveTo(x, p.y); ctx.lineTo(x, p.y + p.h); ctx.stroke();
+      const y = p.y + (i / 5) * p.h;
+      ctx.beginPath(); ctx.moveTo(p.x, y); ctx.lineTo(p.x + p.w, y); ctx.stroke();
+    }
+  }
+
+  function drawAxes(p) {
+    ctx.strokeStyle = '#cbd5e1';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y);
+    ctx.lineTo(p.x, p.y + p.h);
+    ctx.lineTo(p.x + p.w, p.y + p.h);
+    ctx.stroke();
+
+    ctx.font = '12px ui-sans-serif, system-ui, sans-serif';
+
+    // x ticks: 0,2,4,6,8,10 hours
+    ctx.fillStyle = '#94a3b8';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    for (let i = 0; i <= 5; i++) {
+      ctx.fillText((i * 2) + 'h', p.x + (i / 5) * p.w, p.y + p.h + 11);
+    }
+
+    // y ticks
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    if (state.mode === 'regression') {
+      for (let i = 0; i <= 5; i++) {
+        ctx.fillText(String(i * 20), p.x - 12, p.y + p.h - (i / 5) * p.h);
+      }
+    } else {
+      ctx.fillStyle = '#ef4444';
+      ctx.fillText('Fail', p.x - 12, yToPx(CLASS_Y[0]));
+      ctx.fillStyle = '#16a34a';
+      ctx.fillText('Pass', p.x - 12, yToPx(CLASS_Y[1]));
+      ctx.fillStyle = '#7c3aed';
+      ctx.fillText('0.5', p.x - 12, yToPx(50));
+    }
+  }
+
+  function drawTitles(p) {
+    ctx.fillStyle = '#a3aec0';
+    ctx.font = '800 10.5px ui-sans-serif, system-ui, sans-serif';
+    ctx.textBaseline = 'bottom';
+    ctx.textAlign = 'left';
+    ctx.fillText('HOURS STUDIED', p.x, p.y - 16);
+    ctx.textAlign = 'right';
+    ctx.fillText(
+      state.mode === 'regression' ? 'EXAM SCORE (0–100)' : 'P(PASS)',
+      p.x + p.w, p.y - 16
+    );
+  }
+
+  function drawRegression(p, line) {
+    if (line) {
+      ctx.save();
+      clipPlot(p);
+      ctx.strokeStyle = '#2563eb';
+      ctx.lineWidth = 3;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(xToPx(0), yToPx(line.b));
+      ctx.lineTo(xToPx(100), yToPx(line.m * 100 + line.b));
+      ctx.stroke();
+      ctx.restore();
+    }
+    for (const pt of state.reg) {
+      dot(xToPx(pt.x), yToPx(pt.y), 5.5, '#3b82f6', '#fff');
+    }
+  }
+
+  function drawClassification(p, model) {
+    ctx.save();
+    clipPlot(p);
+
+    // the S-shaped probability curve
+    ctx.strokeStyle = '#7c3aed';
+    ctx.lineWidth = 3;
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    for (let xd = 0; xd <= 100; xd += 1) {
+      const py = yToPx(probToY(probAt(model, xd)));
+      if (xd === 0) ctx.moveTo(xToPx(xd), py);
+      else ctx.lineTo(xToPx(xd), py);
+    }
+    ctx.stroke();
+
+    // decision boundary where p = 0.5
+    if (Math.abs(model.w) > 1e-6) {
+      const bx = (-model.b / model.w) * 100;
+      if (bx >= 0 && bx <= 100) {
+        ctx.setLineDash([6, 6]);
+        ctx.strokeStyle = 'rgba(124,58,237,.55)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(xToPx(bx), p.y);
+        ctx.lineTo(xToPx(bx), p.y + p.h);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+    }
+    ctx.restore();
+
+    // data points
+    for (const pt of state.cls) {
+      const py = yToPx(CLASS_Y[pt.y] + (pt.j || 0));
+      if (pt.y === 1) square(xToPx(pt.x), py, 5.5, '#22c55e', '#fff');
+      else dot(xToPx(pt.x), py, 5.5, '#ef4444', '#fff');
+    }
+  }
+
+  function drawProbe(p, model) {
+    const px = xToPx(state.probeX);
+
+    ctx.save();
+    clipPlot(p);
+
+    ctx.setLineDash([4, 5]);
+    ctx.strokeStyle = '#cbd5e1';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(px, p.y);
+    ctx.lineTo(px, p.y + p.h);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    if (state.mode === 'regression') {
+      if (model) {
+        const yv = model.m * state.probeX + model.b;
+        const py = yToPx(clamp(yv, -60, 160));
+        ctx.setLineDash([4, 5]);
+        ctx.strokeStyle = 'rgba(37,99,235,.5)';
+        ctx.beginPath();
+        ctx.moveTo(p.x, py);
+        ctx.lineTo(px, py);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        dot(px, py, 6.5, '#2563eb', '#fff');
+      }
+    } else {
+      const pr = probAt(model, state.probeX);
+      const py = yToPx(probToY(pr));
+      dot(px, py, 6.5, '#7c3aed', '#fff');
+    }
+    ctx.restore();
+  }
+
+  function draw() {
+    if (!W || !H) return;
+    ctx.clearRect(0, 0, W, H);
+
+    const p = plotRect();
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(p.x, p.y, p.w, p.h);
+
+    const model = state.mode === 'regression'
+      ? fitLine(state.reg)
+      : fitLogistic(state.cls);
+
+    if (state.mode === 'classification') drawShading(p, model);
+    drawGrid(p);
+    drawAxes(p);
+
+    if (state.mode === 'regression') drawRegression(p, model);
+    else drawClassification(p, model);
+
+    drawProbe(p, model);
+    drawTitles(p);
+  }
+
+  /* ============================ UI ============================ */
+
+  const bigOut = document.getElementById('bigOut');
+  const subOut = document.getElementById('subOut');
+  const hoursLabel = document.getElementById('hoursLabel');
+  const hint = document.getElementById('hint');
+  const explain = document.getElementById('explain');
+  const brushRow = document.getElementById('brushRow');
+
+  function updateReadout() {
+    if (state.mode === 'regression') {
+      const line = fitLine(state.reg);
+      if (!line) {
+        bigOut.textContent = '—';
+        bigOut.style.color = '#94a3b8';
+        subOut.textContent = 'add at least 2 points';
+        return;
+      }
+      const yhat = line.m * state.probeX + line.b;
+      bigOut.textContent = yhat.toFixed(1);
+      bigOut.style.color = '#1d4ed8';
+      subOut.textContent = 'predicted score  ·  a continuous number';
+    } else {
+      const model = fitLogistic(state.cls);
+      const pr = probAt(model, state.probeX);
+      const cls = pr >= 0.5 ? 1 : 0;
+      bigOut.textContent = cls ? 'PASS' : 'FAIL';
+      bigOut.style.color = cls ? '#16a34a' : '#ef4444';
+      subOut.textContent =
+        `confidence ${(Math.max(pr, 1 - pr) * 100).toFixed(0)}%  ·  P(pass) = ${pr.toFixed(2)}`;
+    }
+  }
+
+  function updatePanel() {
+    document.querySelectorAll('#modeSeg button').forEach(b => {
+      b.classList.toggle('active', b.dataset.mode === state.mode);
+    });
+
+    brushRow.style.display = state.mode === 'classification' ? 'flex' : 'none';
+    document.querySelectorAll('#brushRow .chip').forEach(c => {
+      c.classList.toggle('active', Number(c.dataset.brush) === state.brush);
+    });
+
+    hoursLabel.textContent = (state.probeX / 10).toFixed(1) + ' h';
+
+    hint.textContent = state.mode === 'regression'
+      ? 'Click in the plot to add a point — its height sets the exam score.'
+      : 'Click in the plot to add a point of the selected class.';
+
+    explain.innerHTML = state.mode === 'regression'
+      ? `<p><strong>Regression</strong> answers <em>“how much?”</em>. The output is a
+         <strong>number on a continuous scale</strong> — 63.4 and 63.5 are genuinely
+         different answers. Nudge the slider and the prediction slides smoothly.</p>`
+      : `<p><strong>Classification</strong> answers <em>“which one?”</em>. The output is a
+         <strong>label from a fixed set</strong> — pass or fail, never “63% pass”.
+         The model's <em>certainty</em> changes smoothly (the S-curve), but its
+         <em>answer</em> snaps to one class.</p>`;
+  }
+
+  function refresh() {
+    draw();
+    updateReadout();
+    updatePanel();
+  }
+
+  /* ============================ interaction ============================ */
+
+  canvas.addEventListener('pointerdown', e => {
+    const rect = canvas.getBoundingClientRect();
+    const px = e.clientX - rect.left;
+    const py = e.clientY - rect.top;
+    const p = plotRect();
+
+    if (px < p.x || px > p.x + p.w || py < p.y || py > p.y + p.h) return;
+
+    const xd = clamp(((px - p.x) / p.w) * 100, 1, 99);
+
+    if (state.mode === 'regression') {
+      const yd = clamp(((p.y + p.h - py) / p.h) * 100, 0, 100);
+      state.reg.push({ x: xd, y: yd });
+    } else {
+      state.cls.push({ x: xd, y: state.brush, j: (Math.random() - 0.5) * 10 });
+    }
+    refresh();
+  });
+
+  document.getElementById('modeSeg').addEventListener('click', e => {
+    const btn = e.target.closest('button');
+    if (!btn || btn.dataset.mode === state.mode) return;
+    state.mode = btn.dataset.mode;
+    refresh();
+  });
+
+  document.getElementById('probe').addEventListener('input', e => {
+    state.probeX = Number(e.target.value);
+    refresh();
+  });
+
+  brushRow.addEventListener('click', e => {
+    const chip = e.target.closest('.chip');
+    if (!chip) return;
+    state.brush = Number(chip.dataset.brush);
+    updatePanel();
+  });
+
+  document.getElementById('reset').addEventListener('click', () => {
+    seedData();
+    refresh();
+  });
+
+  /* ============================ sizing ============================ */
+
+  function resize() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = viz.clientWidth;
+    H = viz.clientHeight;
+    canvas.width = Math.round(W * dpr);
+    canvas.height = Math.round(H * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    draw();
+  }
+
+  new ResizeObserver(resize).observe(viz);
+
+  /* ============================ go ============================ */
+
+  seedData();
+  resize();
+  refresh();
+})();
+</script>
+</body>
+</html>
