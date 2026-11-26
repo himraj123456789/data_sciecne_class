@@ -1,0 +1,600 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI vs ML vs Deep Learning Simulator</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f1f5f9;
+    color: #172033;
+}
+
+header {
+    background: #142d4e;
+    color: white;
+    text-align: center;
+    padding: 25px 15px;
+}
+
+header h1 {
+    margin: 0 0 10px;
+}
+
+.container {
+    max-width: 1100px;
+    margin: auto;
+    padding: 20px;
+}
+
+.tabs {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+button {
+    border: 0;
+    padding: 12px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    background: #dbeafe;
+    color: #1e3a8a;
+    font-weight: bold;
+}
+
+button.active {
+    background: #1d4ed8;
+    color: white;
+}
+
+.panel {
+    background: white;
+    padding: 22px;
+    border-radius: 14px;
+    margin-bottom: 20px;
+    box-shadow: 0 3px 12px #00000010;
+}
+
+.panel h2 {
+    margin-top: 0;
+}
+
+.example {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin: 18px 0;
+}
+
+.example div {
+    padding: 15px;
+    background: #f1f5f9;
+    border-radius: 10px;
+    text-align: center;
+}
+
+.example strong {
+    display: block;
+    margin-bottom: 8px;
+}
+
+.process {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin: 25px 0;
+}
+
+.step {
+    background: #e0f2fe;
+    border: 2px solid #60a5fa;
+    padding: 15px;
+    border-radius: 10px;
+    text-align: center;
+    min-width: 120px;
+    font-weight: bold;
+}
+
+.arrow {
+    font-size: 24px;
+    color: #64748b;
+}
+
+.result {
+    background: #dcfce7;
+    border: 2px solid #22c55e;
+    padding: 18px;
+    border-radius: 10px;
+    text-align: center;
+    font-weight: bold;
+    margin-top: 15px;
+}
+
+.hidden {
+    display: none;
+}
+
+canvas {
+    width: 100%;
+    height: 250px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+}
+
+.network {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    gap: 5px;
+    overflow: hidden;
+    padding: 20px 5px;
+}
+
+.layer {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+}
+
+.neuron {
+    width: 17px;
+    height: 17px;
+    border-radius: 50%;
+    background: #3b82f6;
+    box-shadow: 0 0 5px #60a5fa;
+}
+
+.layer-name {
+    font-size: 12px;
+    font-weight: bold;
+    text-align: center;
+}
+
+.diagram {
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+}
+
+.ai-box {
+    background: #dbeafe;
+    border: 3px solid #2563eb;
+    border-radius: 18px;
+    padding: 25px;
+    width: min(100%, 540px);
+    text-align: center;
+}
+
+.ml-box {
+    background: #fef3c7;
+    border: 3px solid #d97706;
+    border-radius: 15px;
+    padding: 20px;
+    margin-top: 15px;
+}
+
+.dl-box {
+    background: #dcfce7;
+    border: 3px solid #16a34a;
+    border-radius: 12px;
+    padding: 18px;
+    margin-top: 15px;
+}
+
+.explanation {
+    line-height: 1.7;
+    color: #475569;
+}
+
+footer {
+    text-align: center;
+    padding: 20px;
+    color: #64748b;
+}
+
+@media(max-width:600px) {
+    .example {
+        grid-template-columns: 1fr;
+    }
+
+    .arrow {
+        transform: rotate(90deg);
+    }
+
+    .step {
+        min-width: 100px;
+        font-size: 12px;
+    }
+
+    .network {
+        gap: 3px;
+    }
+
+    .neuron {
+        width: 11px;
+        height: 11px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <h1>AI vs Machine Learning vs Deep Learning</h1>
+    <p>Understand how computers become intelligent</p>
+</header>
+
+<div class="container">
+
+    <div class="tabs">
+        <button class="active" onclick="showTab('ai',this)">Artificial Intelligence</button>
+        <button onclick="showTab('ml',this)">Machine Learning</button>
+        <button onclick="showTab('dl',this)">Deep Learning</button>
+        <button onclick="showTab('compare',this)">Comparison</button>
+    </div>
+
+    <!-- AI -->
+    <section id="ai" class="panel">
+
+        <h2>1. Artificial Intelligence (AI)</h2>
+
+        <p class="explanation">
+        AI is the broader field of creating machines that perform
+        tasks requiring intelligence, such as reasoning, planning,
+        problem-solving and decision-making.
+        </p>
+
+        <h3>Example: Rule-based traffic signal</h3>
+
+        <div class="example">
+            <div>
+                <strong>Input</strong>
+                Traffic signal sensor detects vehicles.
+            </div>
+            <div>
+                <strong>Predefined rule</strong>
+                If traffic is high, extend green light.
+            </div>
+        </div>
+
+        <div class="process">
+            <div class="step">Vehicle Data</div>
+            <div class="arrow">→</div>
+            <div class="step">IF-ELSE Rules</div>
+            <div class="arrow">→</div>
+            <div class="step">Decision</div>
+        </div>
+
+        <button onclick="runAI()">Run AI Simulation</button>
+
+        <div id="aiResult" class="result hidden"></div>
+
+        <p class="explanation">
+        Notice: This example uses predefined rules. It does not
+        learn from historical data. Rule-based systems are one
+        traditional approach within AI.
+        </p>
+
+    </section>
+
+    <!-- ML -->
+    <section id="ml" class="panel hidden">
+
+        <h2>2. Machine Learning (ML)</h2>
+
+        <p class="explanation">
+        Machine Learning is a subset of AI. It learns patterns
+        from historical data instead of requiring a programmer
+        to manually write every decision rule.
+        </p>
+
+        <h3>Example: Predicting house prices</h3>
+
+        <div class="example">
+            <div>
+                <strong>Training Data</strong>
+                500 sq ft = 15 lakh<br>
+                1000 sq ft = 30 lakh<br>
+                1500 sq ft = 45 lakh
+            </div>
+
+            <div>
+                <strong>New Input</strong>
+                House size = 1200 sq ft
+            </div>
+        </div>
+
+        <div class="process">
+            <div class="step">Historical Data</div>
+            <div class="arrow">→</div>
+            <div class="step">ML Algorithm</div>
+            <div class="arrow">→</div>
+            <div class="step">Learned Model</div>
+        </div>
+
+        <label>Enter house size (sq. ft.)</label>
+        <input id="houseSize" type="number" value="1200"
+        min="100" max="5000"
+        style="padding:12px;width:100%;margin:10px 0;border:1px solid #ccc;border-radius:8px">
+
+        <button onclick="predictPrice()">Predict House Price</button>
+
+        <div id="mlResult" class="result hidden"></div>
+
+        <h3>What has the computer learned?</h3>
+        <p class="explanation">
+        From the sample data, it learns a simple relationship:
+        Price = House Area × 0.03 lakh.
+        </p>
+
+    </section>
+
+    <!-- DL -->
+    <section id="dl" class="panel hidden">
+
+        <h2>3. Deep Learning (DL)</h2>
+
+        <p class="explanation">
+        Deep Learning is a subset of Machine Learning. It uses
+        artificial neural networks with multiple layers to learn
+        complex patterns from data.
+        </p>
+
+        <h3>Example: Recognizing handwritten digits</h3>
+
+        <div class="example">
+            <div>
+                <strong>Input</strong>
+                An image of handwritten digit 7.
+            </div>
+            <div>
+                <strong>Output</strong>
+                Computer predicts digit 7.
+            </div>
+        </div>
+
+        <h3>Neural Network Architecture</h3>
+
+        <div class="network" id="network">
+
+            <div class="layer">
+                <div class="neuron"></div>
+                <div class="neuron"></div>
+                <div class="neuron"></div>
+                <div class="layer-name">Input</div>
+            </div>
+
+            <div class="layer">
+                <div class="neuron"></div>
+                <div class="neuron"></div>
+                <div class="neuron"></div>
+                <div class="neuron"></div>
+                <div class="layer-name">Hidden 1</div>
+            </div>
+
+            <div class="layer">
+                <div class="neuron"></div>
+                <div class="neuron"></div>
+                <div class="neuron"></div>
+                <div class="neuron"></div>
+                <div class="layer-name">Hidden 2</div>
+            </div>
+
+            <div class="layer">
+                <div class="neuron"></div>
+                <div class="neuron"></div>
+                <div class="layer-name">Output</div>
+            </div>
+
+        </div>
+
+        <button onclick="runDL()">Run Neural Network</button>
+
+        <div id="dlResult" class="result hidden"></div>
+
+        <p class="explanation">
+        The layers learn increasingly useful representations.
+        Early layers may detect simple visual features, while
+        later layers can combine them into more complex patterns.
+        </p>
+
+    </section>
+
+    <!-- COMPARISON -->
+    <section id="compare" class="panel hidden">
+
+        <h2>4. Relationship between AI, ML and DL</h2>
+
+        <div class="diagram">
+
+            <div class="ai-box">
+                <h2>Artificial Intelligence</h2>
+                <p>Machines performing intelligent tasks</p>
+
+                <div class="ml-box">
+                    <h3>Machine Learning</h3>
+                    <p>Learning patterns from data</p>
+
+                    <div class="dl-box">
+                        <h3>Deep Learning</h3>
+                        <p>Multi-layer neural networks</p>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        <h3>Comparison Table</h3>
+
+        <div style="overflow-x:auto">
+        <table border="1" cellpadding="12"
+        style="border-collapse:collapse;width:100%;text-align:left">
+
+            <tr>
+                <th>Feature</th>
+                <th>AI</th>
+                <th>ML</th>
+                <th>DL</th>
+            </tr>
+
+            <tr>
+                <td>Scope</td>
+                <td>Broadest</td>
+                <td>Subset of AI</td>
+                <td>Subset of ML</td>
+            </tr>
+
+            <tr>
+                <td>Approach</td>
+                <td>Rules, search, learning</td>
+                <td>Learning from data</td>
+                <td>Neural networks</td>
+            </tr>
+
+            <tr>
+                <td>Example</td>
+                <td>Rule-based chess</td>
+                <td>House prediction</td>
+                <td>Image recognition</td>
+            </tr>
+
+            <tr>
+                <td>Data needs</td>
+                <td>Depends on method</td>
+                <td>Training data</td>
+                <td>Often large datasets</td>
+            </tr>
+
+        </table>
+        </div>
+
+    </section>
+
+</div>
+
+<footer>
+    Computer Science Learning Simulator | AI • ML • DL
+</footer>
+
+<script>
+
+function showTab(id,button) {
+
+    document.querySelectorAll('.panel').forEach(panel => {
+        panel.classList.add('hidden');
+    });
+
+    document.getElementById(id).classList.remove('hidden');
+
+    document.querySelectorAll('.tabs button').forEach(btn => {
+        btn.classList.remove('active');
+    });
+
+    button.classList.add('active');
+}
+
+// AI: Rule-based decision
+
+function runAI() {
+
+    let traffic = Math.floor(Math.random()*100);
+
+    let result = document.getElementById('aiResult');
+
+    result.classList.remove('hidden');
+
+    if(traffic > 60) {
+
+        result.innerHTML =
+        "Traffic level: " + traffic +
+        "%<br>Decision: Extend green light for 30 seconds.";
+
+    } else {
+
+        result.innerHTML =
+        "Traffic level: " + traffic +
+        "%<br>Decision: Keep normal green light timing.";
+
+    }
+
+}
+
+// ML: Simple learned linear relationship
+
+function predictPrice() {
+
+    let size = Number(document.getElementById('houseSize').value);
+
+    let result = document.getElementById('mlResult');
+
+    if(!Number.isFinite(size) || size < 100 || size > 5000) {
+        result.innerHTML = "Enter a house size between 100 and 5000 sq. ft.";
+        result.classList.remove('hidden');
+        return;
+    }
+
+    // Learned from example training data
+    let price = size * 0.03;
+
+    result.innerHTML =
+    "House size: " + size + " sq. ft.<br>" +
+    "Predicted price: ₹" + price.toFixed(2) +
+    " lakh<br><br>" +
+    "The model used its learned relationship to make a prediction.";
+
+    result.classList.remove('hidden');
+
+}
+
+// DL: Neural network illustration
+
+function runDL() {
+
+    let neurons = document.querySelectorAll('.neuron');
+
+    let result = document.getElementById('dlResult');
+
+    neurons.forEach((neuron,index) => {
+
+        setTimeout(() => {
+
+            neuron.style.background = '#22c55e';
+
+            if(index === neurons.length-1) {
+
+                result.innerHTML =
+                "Neural network processing complete!<br>" +
+                "Predicted digit: 7<br>" +
+                "Illustrative confidence: 98%";
+
+                result.classList.remove('hidden');
+
+            }
+
+        },index*180);
+
+    });
+
+}
+
+</script>
+
+</body>
+</html>
