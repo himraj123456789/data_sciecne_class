@@ -1,0 +1,879 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Artificial Neural Network Simulator</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f1f5f9;
+    color: #172033;
+}
+
+header {
+    background: #142d4e;
+    color: white;
+    padding: 24px;
+    text-align: center;
+}
+
+header h1 {
+    margin: 0 0 10px;
+}
+
+.container {
+    max-width: 1200px;
+    margin: auto;
+    padding: 20px;
+}
+
+.card {
+    background: white;
+    padding: 20px;
+    border-radius: 13px;
+    margin-bottom: 18px;
+    box-shadow: 0 3px 12px #0000000c;
+}
+
+h2 {
+    margin-top: 0;
+    color: #1e3a8a;
+}
+
+.controls {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 18px;
+}
+
+.control {
+    background: #f8fafc;
+    padding: 15px;
+    border-radius: 10px;
+}
+
+input[type=range] {
+    width: 100%;
+    accent-color: #2563eb;
+    margin-top: 12px;
+}
+
+button {
+    padding: 12px 18px;
+    border: 0;
+    border-radius: 8px;
+    background: #2563eb;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    margin: 5px;
+}
+
+button:hover {
+    background: #1d4ed8;
+}
+
+button:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+}
+
+.secondary {
+    background: #475569;
+}
+
+.canvas-wrap {
+    overflow-x: auto;
+    background: #f8fafc;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+}
+
+canvas {
+    display: block;
+    width: 100%;
+    min-width: 650px;
+    height: 460px;
+}
+
+.legend {
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+    font-size: 13px;
+    margin-top: 15px;
+}
+
+.dot {
+    width: 11px;
+    height: 11px;
+    display: inline-block;
+    border-radius: 50%;
+    margin-right: 5px;
+}
+
+.log {
+    background: #0f172a;
+    color: #86efac;
+    padding: 15px;
+    border-radius: 10px;
+    min-height: 130px;
+    font-family: monospace;
+    font-size: 13px;
+    line-height: 1.8;
+    overflow-x: auto;
+}
+
+.math {
+    background: #eff6ff;
+    padding: 15px;
+    border-radius: 9px;
+    margin: 10px 0;
+    line-height: 1.9;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 11px;
+    border-bottom: 1px solid #e2e8f0;
+    text-align: center;
+}
+
+th {
+    background: #eff6ff;
+}
+
+.output {
+    background: #dcfce7;
+    border: 2px solid #22c55e;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+}
+
+.output strong {
+    font-size: 30px;
+    color: #166534;
+}
+
+.status {
+    color: #64748b;
+    font-size: 13px;
+}
+
+@media(max-width:650px) {
+    .controls {
+        grid-template-columns: 1fr;
+    }
+
+    .container {
+        padding: 10px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <h1>Artificial Neural Network</h1>
+    <p>Visualize how artificial neurons communicate and learn</p>
+</header>
+
+<div class="container">
+
+    <!-- INPUT CONTROLS -->
+
+    <div class="card">
+        <h2>1. Input Data</h2>
+
+        <p>
+            Imagine that we want to predict whether a student
+            will pass an examination using two features:
+            study hours and attendance.
+        </p>
+
+        <div class="controls">
+
+            <div class="control">
+                <label>
+                    Study Hours:
+                    <strong id="studyVal">8</strong>
+                </label>
+                <input type="range" id="study"
+                min="0" max="10" step="0.1" value="8">
+            </div>
+
+            <div class="control">
+                <label>
+                    Attendance (%):
+                    <strong id="attendanceVal">80</strong>
+                </label>
+                <input type="range" id="attendance"
+                min="0" max="100" step="1" value="80">
+            </div>
+
+        </div>
+
+        <p class="status">
+            Inputs are normalized between 0 and 1 before entering
+            the neural network.
+        </p>
+    </div>
+
+    <!-- NETWORK -->
+
+    <div class="card">
+        <h2>2. Neural Network Architecture</h2>
+
+        <p>
+            Each circle represents a neuron.
+            Each connecting line represents a weighted connection.
+        </p>
+
+        <div class="canvas-wrap">
+            <canvas id="network" width="1000" height="460"></canvas>
+        </div>
+
+        <div class="legend">
+            <span><i class="dot" style="background:#2563eb"></i>Input neuron</span>
+            <span><i class="dot" style="background:#9333ea"></i>Hidden neuron</span>
+            <span><i class="dot" style="background:#16a34a"></i>Output neuron</span>
+            <span><i class="dot" style="background:#f97316"></i>Signal travelling</span>
+        </div>
+
+        <p class="status">
+            Thicker connections represent larger absolute weights.
+            Orange dots show the animated movement of information.
+        </p>
+
+        <div style="text-align:center;margin-top:15px">
+            <button id="runBtn" onclick="runNetwork()">
+                ▶ Run Neural Network
+            </button>
+
+            <button class="secondary" onclick="resetNetwork()">
+                Reset
+            </button>
+
+            <button class="secondary" onclick="randomizeWeights()">
+                Randomize Weights
+            </button>
+        </div>
+
+        <p id="status" class="status" style="text-align:center">
+            Ready. Adjust inputs and run the network.
+        </p>
+    </div>
+
+    <!-- MATHEMATICAL WORKING -->
+
+    <div class="card">
+        <h2>3. How does an individual neuron work?</h2>
+
+        <p>
+            A neuron receives multiple inputs. Each input is
+            multiplied by its corresponding weight.
+        </p>
+
+        <div class="math">
+            <strong>Step 1: Weighted Sum</strong><br>
+            z = (x₁ × w₁) + (x₂ × w₂) + b
+            <br><br>
+
+            <strong>Step 2: Activation Function</strong><br>
+            a = σ(z)
+            <br><br>
+
+            <strong>Sigmoid Activation</strong><br>
+            σ(z) = 1 / (1 + e<sup>-z</sup>)
+        </div>
+
+        <p>
+            Here:
+        </p>
+
+        <ul>
+            <li>x = Input value</li>
+            <li>w = Weight of connection</li>
+            <li>b = Bias</li>
+            <li>z = Weighted sum</li>
+            <li>a = Activated output</li>
+        </ul>
+    </div>
+
+    <!-- CALCULATION TABLE -->
+
+    <div class="card">
+        <h2>4. Neuron Processing Details</h2>
+
+        <p>
+            Select a neuron from the list to inspect its calculations.
+        </p>
+
+        <select id="neuronSelect"
+        onchange="showNeuronDetails()"
+        style="padding:10px;width:100%;border:1px solid #ccc;border-radius:8px">
+
+            <option value="0-0">Hidden Layer 1 - Neuron 1</option>
+            <option value="0-1">Hidden Layer 1 - Neuron 2</option>
+            <option value="0-2">Hidden Layer 1 - Neuron 3</option>
+            <option value="1-0">Hidden Layer 2 - Neuron 1</option>
+            <option value="1-1">Hidden Layer 2 - Neuron 2</option>
+            <option value="2-0">Output Neuron</option>
+
+        </select>
+
+        <div id="neuronDetails" class="math">
+            Run the network to see neuron calculations.
+        </div>
+    </div>
+
+    <!-- OUTPUT -->
+
+    <div class="card">
+        <h2>5. Final Prediction</h2>
+
+        <div class="output">
+            <p>Predicted probability of passing</p>
+            <strong id="prediction">--%</strong>
+            <p id="decision">Run the neural network first.</p>
+        </div>
+    </div>
+
+    <!-- LOG -->
+
+    <div class="card">
+        <h2>6. Forward Propagation Log</h2>
+        <p>
+            Observe how data moves from input layer to hidden
+            layers and finally to the output layer.
+        </p>
+
+        <div class="log" id="log">
+            System initialized...<br>
+            Network architecture: 2 → 3 → 2 → 1<br>
+            Waiting for input...
+        </div>
+    </div>
+
+</div>
+
+<script>
+
+// ==================================
+// NETWORK CONFIGURATION
+// ==================================
+
+const canvas = document.getElementById("network");
+const ctx = canvas.getContext("2d");
+
+const positions = [
+    [{x:100,y:175},{x:100,y:300}],
+    [{x:350,y:110},{x:350,y:230},{x:350,y:350}],
+    [{x:650,y:170},{x:650,y:300}],
+    [{x:900,y:235}]
+];
+
+// Weights: each destination neuron has
+// one weight for each neuron in previous layer.
+
+let weights = [
+    [
+        [0.8,-0.5],
+        [-0.4,0.9],
+        [0.5,0.5]
+    ],
+    [
+        [0.7,-0.6,0.4],
+        [-0.3,0.8,0.6]
+    ],
+    [
+        [1.0,0.8]
+    ]
+];
+
+let biases = [
+    [0.1,-0.1,0.2],
+    [0.1,-0.2],
+    [-0.4]
+];
+
+let activations = [];
+let calculations = [];
+let animationFrame = null;
+let running = false;
+
+// ==================================
+// ACTIVATION FUNCTION
+// ==================================
+
+function sigmoid(z) {
+    return 1 / (1 + Math.exp(-z));
+}
+
+// ==================================
+// INPUT VALUES
+// ==================================
+
+function getInputs() {
+
+    const study = Number(
+        document.getElementById("study").value
+    ) / 10;
+
+    const attendance = Number(
+        document.getElementById("attendance").value
+    ) / 100;
+
+    return [study, attendance];
+}
+
+document.getElementById("study").oninput = function() {
+    document.getElementById("studyVal").textContent = this.value;
+    resetNetwork();
+};
+
+document.getElementById("attendance").oninput = function() {
+    document.getElementById("attendanceVal").textContent = this.value;
+    resetNetwork();
+};
+
+// ==================================
+// FORWARD PROPAGATION
+// ==================================
+
+function calculateNetwork() {
+
+    let current = getInputs();
+
+    activations = [current];
+    calculations = [];
+
+    for(let layer = 0; layer < weights.length; layer++) {
+
+        let next = [];
+        let layerCalculations = [];
+
+        for(let neuron = 0; neuron < weights[layer].length; neuron++) {
+
+            let sum = biases[layer][neuron];
+
+            let inputs = [];
+
+            for(let i = 0; i < current.length; i++) {
+
+                let product =
+                    current[i] * weights[layer][neuron][i];
+
+                sum += product;
+
+                inputs.push({
+                    value: current[i],
+                    weight: weights[layer][neuron][i],
+                    product: product
+                });
+            }
+
+            let output = sigmoid(sum);
+
+            layerCalculations.push({
+                inputs: inputs,
+                bias: biases[layer][neuron],
+                z: sum,
+                output: output
+            });
+
+            next.push(output);
+        }
+
+        calculations.push(layerCalculations);
+        activations.push(next);
+
+        current = next;
+    }
+
+    return current[0];
+}
+
+// ==================================
+// DRAW NETWORK
+// ==================================
+
+function drawNetwork(progress = -1, completed = false) {
+
+    ctx.clearRect(0,0,1000,460);
+
+    // Background grid
+
+    ctx.strokeStyle = "#e2e8f0";
+    ctx.lineWidth = 1;
+
+    for(let x=0;x<1000;x+=50) {
+        ctx.beginPath();
+        ctx.moveTo(x,0);
+        ctx.lineTo(x,460);
+        ctx.stroke();
+    }
+
+    // Connections
+
+    for(let layer=0;layer<positions.length-1;layer++) {
+
+        for(let source=0;source<positions[layer].length;source++) {
+
+            for(let dest=0;dest<positions[layer+1].length;dest++) {
+
+                const a = positions[layer][source];
+                const b = positions[layer+1][dest];
+
+                const weight = weights[layer][dest][source];
+
+                ctx.beginPath();
+                ctx.moveTo(a.x,a.y);
+                ctx.lineTo(b.x,b.y);
+
+                ctx.strokeStyle = weight >= 0
+                    ? "rgba(37,99,235,0.48)"
+                    : "rgba(220,38,38,0.48)";
+
+                ctx.lineWidth = 1 + Math.abs(weight)*2;
+                ctx.stroke();
+
+                // Weight label
+
+                ctx.fillStyle = "#334155";
+                ctx.font = "12px Arial";
+
+                let mx = (a.x+b.x)/2;
+                let my = (a.y+b.y)/2;
+
+                ctx.fillText(weight.toFixed(2),mx,my-5);
+            }
+        }
+    }
+
+    // Animated travelling signals
+
+    if(progress >= 0) {
+
+        let layer = Math.min(
+            Math.floor(progress),
+            positions.length-2
+        );
+
+        let fraction = progress-layer;
+
+        for(let source=0;source<positions[layer].length;source++) {
+
+            for(let dest=0;dest<positions[layer+1].length;dest++) {
+
+                let a = positions[layer][source];
+                let b = positions[layer+1][dest];
+
+                let x = a.x+(b.x-a.x)*fraction;
+                let y = a.y+(b.y-a.y)*fraction;
+
+                ctx.beginPath();
+                ctx.arc(x,y,5,0,Math.PI*2);
+                ctx.fillStyle = "#f97316";
+                ctx.fill();
+            }
+        }
+    }
+
+    // Neurons
+
+    positions.forEach((layer,index)=>{
+
+        layer.forEach((p,neuron)=>{
+
+            let color;
+
+            if(index===0) color="#2563eb";
+            else if(index===positions.length-1) color="#16a34a";
+            else color="#9333ea";
+
+            let value = activations[index]
+                ? activations[index][neuron]
+                : null;
+
+            let isActive = completed || (
+                progress >= index && index < positions.length-1
+            );
+
+            ctx.beginPath();
+            ctx.arc(p.x,p.y,24,0,Math.PI*2);
+            ctx.fillStyle = isActive ? color : "#94a3b8";
+            ctx.fill();
+
+            ctx.strokeStyle = "#ffffff";
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            ctx.fillStyle = "white";
+            ctx.font = "bold 12px Arial";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+
+            ctx.fillText(
+                value === null ? "?" : value.toFixed(2),
+                p.x,p.y
+            );
+
+        });
+
+    });
+
+    // Layer names
+
+    const names = [
+        "INPUT LAYER",
+        "HIDDEN LAYER 1",
+        "HIDDEN LAYER 2",
+        "OUTPUT LAYER"
+    ];
+
+    positions.forEach((layer,i)=>{
+
+        ctx.fillStyle="#172033";
+        ctx.font="bold 14px Arial";
+        ctx.textAlign="center";
+
+        ctx.fillText(names[i],layer[0].x,425);
+    });
+
+    ctx.textAlign="start";
+    ctx.textBaseline="alphabetic";
+}
+
+// ==================================
+// RUN ANIMATION
+// ==================================
+
+function runNetwork() {
+
+    if(running) return;
+
+    running = true;
+
+    document.getElementById("runBtn").disabled = true;
+
+    const prediction = calculateNetwork();
+
+    const log = document.getElementById("log");
+
+    log.innerHTML =
+        "INPUT LAYER<br>" +
+        "Study hours: " + activations[0][0].toFixed(2) +
+        "<br>Attendance: " + activations[0][1].toFixed(2);
+
+    drawNetwork(0);
+
+    document.getElementById("status").textContent =
+        "Sending signals through the neural network...";
+
+    let start = null;
+    const duration = 3000;
+
+    function animate(timestamp) {
+
+        if(!start) start = timestamp;
+
+        let t = Math.min((timestamp-start)/duration,1);
+
+        let progress = t*3;
+
+        drawNetwork(progress);
+
+        if(t < 1) {
+
+            animationFrame = requestAnimationFrame(animate);
+
+        } else {
+
+            finishNetwork(prediction);
+
+        }
+    }
+
+    animationFrame = requestAnimationFrame(animate);
+}
+
+// ==================================
+// COMPLETE FORWARD PASS
+// ==================================
+
+function finishNetwork(prediction) {
+
+    drawNetwork(3,true);
+
+    let log = document.getElementById("log");
+
+    let html = "INPUT LAYER<br>";
+
+    html += "Inputs: " +
+        activations[0].map(v=>v.toFixed(3)).join(", ");
+
+    calculations.forEach((layer,i)=>{
+
+        html += "<br><br>HIDDEN / OUTPUT LAYER " +
+            (i+1) + "<br>";
+
+        layer.forEach((neuron,j)=>{
+
+            html += "Neuron " + (j+1) +
+                ": z = " + neuron.z.toFixed(4) +
+                " → sigmoid(z) = " +
+                neuron.output.toFixed(4) + "<br>";
+
+        });
+
+    });
+
+    html += "<br>FORWARD PROPAGATION COMPLETED.";
+
+    log.innerHTML = html;
+
+    document.getElementById("prediction").textContent =
+        (prediction*100).toFixed(2)+"%";
+
+    document.getElementById("decision").textContent =
+        prediction >= 0.5
+        ? "Model prediction: Likely to PASS"
+        : "Model prediction: Likely to FAIL";
+
+    document.getElementById("status").textContent =
+        "Forward propagation completed successfully.";
+
+    document.getElementById("runBtn").disabled = false;
+
+    running = false;
+
+    showNeuronDetails();
+}
+
+// ==================================
+// INSPECT A NEURON
+// ==================================
+
+function showNeuronDetails() {
+
+    if(!calculations.length) return;
+
+    let [layer,neuron] = document
+        .getElementById("neuronSelect").value
+        .split("-").map(Number);
+
+    let data = calculations[layer][neuron];
+
+    let html = "<strong>Neuron " + (neuron+1) +
+        " | Layer " + (layer+1) + "</strong><br><br>";
+
+    data.inputs.forEach((item,i)=>{
+
+        html += "Input " + (i+1) +
+            ": " + item.value.toFixed(4) +
+            " × Weight " + item.weight.toFixed(3) +
+            " = " + item.product.toFixed(4) + "<br>";
+
+    });
+
+    html += "<br>Bias = " + data.bias.toFixed(4);
+
+    html += "<br><br><strong>Weighted Sum (z)</strong> = " +
+        data.z.toFixed(4);
+
+    html += "<br><strong>Activation</strong> = sigmoid(" +
+        data.z.toFixed(4) + ")";
+
+    html += "<br><strong>Neuron Output</strong> = " +
+        data.output.toFixed(4);
+
+    document.getElementById("neuronDetails").innerHTML = html;
+}
+
+// ==================================
+// RESET
+// ==================================
+
+function resetNetwork() {
+
+    if(running) {
+        cancelAnimationFrame(animationFrame);
+        running = false;
+    }
+
+    activations = [];
+    calculations = [];
+
+    document.getElementById("prediction").textContent = "--%";
+    document.getElementById("decision").textContent =
+        "Run the neural network first.";
+
+    document.getElementById("log").innerHTML =
+        "Network reset.<br>Waiting for input...";
+
+    document.getElementById("neuronDetails").textContent =
+        "Run the network to see neuron calculations.";
+
+    document.getElementById("status").textContent =
+        "Ready. Adjust inputs and run the network.";
+
+    document.getElementById("runBtn").disabled = false;
+
+    drawNetwork();
+}
+
+// ==================================
+// RANDOMIZE WEIGHTS
+// ==================================
+
+function randomizeWeights() {
+
+    if(running) return;
+
+    weights.forEach(layer=>{
+        layer.forEach(neuron=>{
+            neuron.forEach((w,i)=>{
+                neuron[i] = Number(
+                    (Math.random()*2-1).toFixed(2)
+                );
+            });
+        });
+    });
+
+    biases.forEach(layer=>{
+        layer.forEach((b,i)=>{
+            layer[i] = Number(
+                (Math.random()*0.6-0.3).toFixed(2)
+            );
+        });
+    });
+
+    resetNetwork();
+
+    document.getElementById("status").textContent =
+        "Weights and biases randomized. Run again to see the changed output.";
+}
+
+// INITIALIZE
+
+drawNetwork();
+
+</script>
+
+</body>
+</html>
