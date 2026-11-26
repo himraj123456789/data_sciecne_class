@@ -1,0 +1,385 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rank Nullity 3D Playground</title>
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;color:#f4f5ff;font-family:Arial,sans-serif;
+ background:radial-gradient(circle at top,#24315d,#090d1d 75%);
+}
+header{text-align:center;padding:25px 12px 15px}
+h1{font-size:clamp(25px,4vw,38px);margin:0}
+header p{color:#b9c9ed}
+.container{max-width:1100px;margin:auto;padding:14px}
+.panel{
+ background:#151f3b;border:1px solid #35476e;
+ border-radius:18px;padding:18px;margin-bottom:15px;
+ box-shadow:0 10px 30px #0004;
+}
+h2{font-size:20px;margin:0 0 14px}
+button{
+ border:0;padding:12px 15px;border-radius:11px;
+ background:#34466d;color:white;font-weight:bold;
+ cursor:pointer;transition:.2s;
+}
+button:hover{transform:translateY(-2px)}
+button.active{background:#8057ee;box-shadow:0 0 16px #8057ee77}
+button.play{background:#079d83}
+button.reset{background:#c44c70}
+.presets{display:flex;gap:9px;flex-wrap:wrap}
+.scene{
+ height:390px;width:100%;background:#0a1328;
+ border-radius:14px;overflow:hidden;border:1px solid #34466a;
+}
+canvas{width:100%;height:100%;display:block;touch-action:none}
+.controls{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:15px}
+input[type=range]{flex:1;min-width:150px;accent-color:#a78bfa}
+.value{color:#c7b5ff;font-weight:bold;min-width:45px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:15px}
+.stat{padding:15px;background:#202d4d;border-radius:13px;text-align:center}
+.stat strong{font-size:32px;display:block;margin:5px}
+.stat small{color:#b9c9ed}
+.rank strong{color:#57d9ff}
+.nullity strong{color:#ffce67}
+.total strong{color:#79e6c1}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.info{background:#202d4d;padding:15px;border-radius:13px}
+.info h3{color:#b7caff;margin:0 0 10px}
+.math{font-family:monospace;font-size:16px;line-height:1.8;color:#ffe7a5;white-space:pre-line}
+.explain{line-height:1.65;color:#d0dcf3}
+.equation{
+ text-align:center;font-size:clamp(21px,4vw,30px);
+ font-weight:bold;padding:17px;background:#222e4d;
+ border-radius:14px;margin:12px 0;
+}
+.equation span:nth-child(1){color:#57d9ff}
+.equation span:nth-child(2){color:#ffce67}
+.equation span:nth-child(3){color:#79e6c1}
+#message{color:#7ee7c1;font-weight:bold}
+footer{text-align:center;padding:18px;color:#9aa9ca}
+@media(max-width:600px){
+ .scene{height:310px}.stats{grid-template-columns:repeat(3,1fr)}
+ .stat{padding:10px 4px}.stat strong{font-size:25px}
+}
+</style>
+</head>
+<body>
+<header>
+ <h1>🧊 Rank–Nullity Playground 🎮</h1>
+ <p>How many dimensions survive and how many disappear?</p>
+</header>
+
+<main class="container">
+<section class="panel">
+ <h2>🎛️ Select your transformation</h2>
+ <div class="presets">
+  <button onclick="choose(3)" id="b3" class="active">🧊 Rank 3</button>
+  <button onclick="choose(2)" id="b2">🪂 Rank 2</button>
+  <button onclick="choose(1)" id="b1">🛤️ Rank 1</button>
+  <button onclick="choose(0)" id="b0">💥 Rank 0</button>
+ </div>
+ <p class="explain" id="description"></p>
+</section>
+
+<section class="panel">
+ <h2>🌌 Watch the 3D transformation</h2>
+ <div class="scene"><canvas id="c"></canvas></div>
+ <p class="explain">🖱️ Drag the 3D scene to rotate it. Watch the yellow directions disappear and the cyan directions survive!</p>
+ <div class="controls">
+  <button class="play" onclick="animate()">▶ Transform</button>
+  <button class="reset" onclick="reset()">↺ Reset</button>
+  <label for="slider">Progress</label>
+  <input id="slider" type="range" min="0" max="100" value="0">
+  <span class="value" id="pct">0%</span>
+ </div>
+ <div id="message">🚀 Ready for transformation!</div>
+</section>
+
+<section class="panel">
+ <h2>📊 The live theorem calculator</h2>
+ <div class="stats">
+  <div class="stat rank"><small>Surviving dimensions</small><strong id="rank">3</strong><small>RANK</small></div>
+  <div class="stat nullity"><small>Lost dimensions</small><strong id="nullity">0</strong><small>NULLITY</small></div>
+  <div class="stat total"><small>Input dimensions</small><strong>3</strong><small>TOTAL</small></div>
+ </div>
+ <div class="equation">
+  <span id="rEq">3</span> +
+  <span id="nEq">0</span> =
+  <span>3</span>
+ </div>
+ <p class="explain" style="text-align:center">Rank + Nullity = Number of columns</p>
+</section>
+
+<section class="grid">
+ <div class="info">
+  <h3>⚙️ Transformation matrix A</h3>
+  <div class="math" id="matrix"></div>
+ </div>
+ <div class="info">
+  <h3>🧠 Geometrical meaning</h3>
+  <p class="explain" id="geometry"></p>
+ </div>
+ <div class="info">
+  <h3>📥 Null space</h3>
+  <div class="math" id="kernel"></div>
+  <p class="explain">These are the input vectors that become zero.</p>
+ </div>
+ <div class="info">
+  <h3>📤 Column space</h3>
+  <div class="math" id="image"></div>
+  <p class="explain">These are the independent output directions.</p>
+ </div>
+</section>
+
+<section class="panel">
+ <h2>💡 Remember the concept</h2>
+ <p class="explain">
+ Rank measures the dimension of the output space (image).
+ Nullity measures the dimension of the input space that gets mapped to zero (kernel).
+ </p>
+ <div class="equation">n = Rank(A) + Nullity(A)</div>
+ <p class="explain" id="analogy">Imagine a 3D cube being transformed by a magic machine!</p>
+</section>
+
+<section class="panel">
+ <h2>🧪 Quick classroom challenge</h2>
+ <p class="explain">A matrix has 3 columns and rank 1. What is its nullity?</p>
+ <div class="presets">
+  <button onclick="quiz(0)">0</button>
+  <button onclick="quiz(1)">1</button>
+  <button onclick="quiz(2)">2</button>
+  <button onclick="quiz(3)">3</button>
+ </div>
+ <p id="quizResult" class="explain"></p>
+</section>
+</main>
+<footer>Linear Algebra × Machine Learning | Made for curious minds 🤖</footer>
+
+<script>
+const canvas=document.getElementById('c');
+const ctx=canvas.getContext('2d');
+let rank=3,t=0,playing=false,raf=0,last=0;
+let rotY=.55,rotX=-.35,drag=false,px=0,py=0;
+
+const slider=document.getElementById('slider');
+
+function resize(){
+ const d=window.devicePixelRatio||1;
+ const r=canvas.getBoundingClientRect();
+ canvas.width=r.width*d;canvas.height=r.height*d;
+ ctx.setTransform(d,0,0,d,0,0);
+ draw();
+}
+window.addEventListener('resize',resize);
+
+function transform(p){
+ // Singular diagonal matrix: keep first 'rank' coordinates
+ const scales=[rank>=1?1:0,rank>=2?1:0,rank>=3?1:0];
+ return p.map((v,i)=>v*(1-t+t*scales[i]));
+}
+function rotate(p){
+ let [x,y,z]=p;
+ let a=rotY,b=rotX;
+ let x1=x*Math.cos(a)-y*Math.sin(a);
+ let y1=x*Math.sin(a)+y*Math.cos(a);
+ let z1=z;
+ let y2=y1*Math.cos(b)-z1*Math.sin(b);
+ let z2=y1*Math.sin(b)+z1*Math.cos(b);
+ return [x1,y2,z2];
+}
+function project(p){
+ const [x,y,z]=rotate(p);
+ const s=Math.min(canvas.clientWidth,canvas.clientHeight)*.115;
+ const depth=5-z*.12;
+ return [
+  canvas.clientWidth/2+x*s*5/depth,
+  canvas.clientHeight*.53-y*s*5/depth
+ ];
+}
+function line(a,b,color,width=2,dash=[]){
+ const A=project(a),B=project(b);
+ ctx.beginPath();ctx.setLineDash(dash);
+ ctx.moveTo(...A);ctx.lineTo(...B);
+ ctx.strokeStyle=color;ctx.lineWidth=width;ctx.stroke();
+ ctx.setLineDash([]);
+}
+function point(p,color,r=4,emoji=''){
+ const [x,y]=project(p);
+ ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);
+ ctx.fillStyle=color;ctx.fill();
+ if(emoji){
+  ctx.font='18px Arial';ctx.textAlign='center';
+  ctx.fillText(emoji,x,y-12);
+ }
+}
+function label(s,p,color){
+ const [x,y]=project(p);
+ ctx.font='bold 12px Arial';ctx.fillStyle=color;
+ ctx.fillText(s,x+6,y-7);
+}
+function axes(){
+ const L=3.2;
+ line([-L,0,0],[L,0,0],'#54d8ff',2);
+ line([0,-L,0],[0,L,0],'#54d8ff',2);
+ line([0,0,-L],[0,0,L],'#54d8ff',2);
+ label('X',[L,0,0],'#54d8ff');
+ label('Y',[0,L,0],'#54d8ff');
+ label('Z',[0,0,L],'#54d8ff');
+ point([0,0,0],'white',5,'🎯');
+}
+function drawCube(){
+ let v=[];
+ for(let x of [-1,1])
+ for(let y of [-1,1])
+ for(let z of [-1,1])v.push([x*1.6,y*1.6,z*1.6]);
+ let edges=[];
+ for(let i=0;i<8;i++)
+ for(let j=i+1;j<8;j++){
+  let diff=v[i].filter((a,k)=>a!==v[j][k]).length;
+  if(diff===1)edges.push([v[i],v[j]]);
+ }
+ // Original cube is faint
+ edges.forEach(([a,b])=>line(a,b,'#44516e',1,[4,5]));
+ // Transformed cube
+ edges.forEach(([a,b])=>line(transform(a),transform(b),'#ff739b',3));
+ v.forEach(p=>point(transform(p),'#ff739b',3));
+}
+function drawSurviving(){
+ const vectors=[
+  {p:[2.5,0,0],name:'X survives',c:'#54d8ff'},
+  {p:[0,2.5,0],name:'Y survives',c:'#54d8ff'},
+  {p:[0,0,2.5],name:'Z survives',c:'#54d8ff'}
+ ];
+ vectors.forEach((v,i)=>{
+  if(i<rank){
+   line([0,0,0],transform(v.p),v.c,4);
+   point(transform(v.p),v.c,5);
+   label(v.name,transform(v.p),v.c);
+  }
+ });
+}
+function drawLost(){
+ const vectors=[
+  {p:[0,0,2.5],name:'Z lost',c:'#ffce67'},
+  {p:[0,2.5,0],name:'Y lost',c:'#ffce67'},
+  {p:[2.5,0,0],name:'X lost',c:'#ffce67'}
+ ];
+ vectors.forEach((v,i)=>{
+  if(i>=rank){
+   line([0,0,0],v.p,'#8b713c',2,[3,4]);
+   line(v.p,transform(v.p),'#ffce67',4);
+   point(transform(v.p),'#ffce67',5,t>.75?'😂':'');
+  }
+ });
+}
+function draw(){
+ const w=canvas.clientWidth,h=canvas.clientHeight;
+ ctx.clearRect(0,0,w,h);
+ // Grid floor
+ for(let i=-3;i<=3;i++){
+  line([i,-3,-1.65],[i,3,-1.65],'#25334e',.6);
+  line([-3,i,-1.65],[3,i,-1.65],'#25334e',.6);
+ }
+ axes();
+ drawCube();
+ drawLost();
+ drawSurviving();
+ const o=project([0,0,0]);
+ ctx.font='bold 13px Arial';ctx.fillStyle='#ff9bb5';
+ ctx.fillText(t===1?'COLLAPSED! 💥':'MAGIC ORIGIN 🎯',o[0]+12,o[1]+22);
+}
+function update(){
+ slider.value=Math.round(t*100);
+ document.getElementById('pct').textContent=Math.round(t*100)+'%';
+ document.getElementById('rank').textContent=rank;
+ document.getElementById('nullity').textContent=3-rank;
+ document.getElementById('rEq').textContent=rank;
+ document.getElementById('nEq').textContent=3-rank;
+
+ const matrices=[
+  'A = [0 0 0]\\n    [0 0 0]\\n    [0 0 0]',
+  'A = [1 0 0]\\n    [0 0 0]\\n    [0 0 0]',
+  'A = [1 0 0]\\n    [0 1 0]\\n    [0 0 0]',
+  'A = [1 0 0]\\n    [0 1 0]\\n    [0 0 1]'
+ ];
+ document.getElementById('matrix').textContent=matrices[rank];
+ const meanings=[
+  ['A point','N(A) = R³','Column space = {0}',
+   'All directions are lost. The cube collapses to a point. Zero information survives! 😵'],
+  ['A line','N(A) = span{e₂,e₃}','Column space = span{e₁}',
+   'Two directions disappear. Only the X direction survives. A cube becomes a line! 🛤️'],
+  ['A plane','N(A) = span{e₃}','Column space = span{e₁,e₂}',
+   'One direction disappears. X and Y survive. A cube becomes a plane! 🪂'],
+  ['A cube','N(A) = {0}','Column space = R³',
+   'Nothing is lost. X, Y and Z all survive. The cube remains 3D! 🧊']
+ ];
+ document.getElementById('geometry').textContent=meanings[rank][0]+
+  '. '+meanings[rank][3];
+ document.getElementById('kernel').textContent=meanings[rank][1];
+ document.getElementById('image').textContent=meanings[rank][2];
+ document.getElementById('analogy').textContent=meanings[rank][3];
+ document.getElementById('message').textContent=t===1?
+  '💥 Transformation complete! Rank + Nullity = 3!':
+  t===0?'🚀 Ready! Press Transform to begin.':'🌀 Dimensions are changing...';
+ draw();
+}
+function choose(r){
+ rank=r;t=0;playing=false;cancelAnimationFrame(raf);
+ for(let i=0;i<=3;i++){
+  document.getElementById('b'+i).classList.toggle('active',i===r);
+ }
+ const descriptions=[
+ '💥 Rank 0: Every direction disappears. All 3D space becomes one point.',
+ '🛤️ Rank 1: Only X survives. Y and Z disappear.',
+ '🪂 Rank 2: X and Y survive. Z disappears.',
+ '🧊 Rank 3: X, Y and Z all survive. Nothing disappears.'
+ ];
+ document.getElementById('description').textContent=descriptions[r];
+ update();
+}
+function animate(){
+ if(playing)return;
+ if(t>=1)t=0;
+ playing=true;last=0;
+ function step(now){
+  if(!playing)return;
+  if(!last)last=now;
+  t=Math.min(1,t+(now-last)/2600);
+  last=now;update();
+  if(t<1)raf=requestAnimationFrame(step);
+  else playing=false;
+ }
+ raf=requestAnimationFrame(step);
+}
+function reset(){
+ playing=false;cancelAnimationFrame(raf);t=0;update();
+}
+slider.addEventListener('input',()=>{
+ playing=false;cancelAnimationFrame(raf);
+ t=Number(slider.value)/100;update();
+});
+canvas.addEventListener('pointerdown',e=>{
+ drag=true;px=e.clientX;py=e.clientY;canvas.setPointerCapture(e.pointerId);
+});
+canvas.addEventListener('pointermove',e=>{
+ if(!drag)return;
+ rotY+=(e.clientX-px)*.008;
+ rotX+=(e.clientY-py)*.008;
+ px=e.clientX;py=e.clientY;draw();
+});
+canvas.addEventListener('pointerup',()=>drag=false);
+canvas.addEventListener('pointercancel',()=>drag=false);
+function quiz(v){
+ const out=document.getElementById('quizResult');
+ out.textContent=v===2?
+ '🎉 Correct! Nullity = 3 − 1 = 2. Two independent input directions are lost.':
+ '😂 Try again! Remember: Rank + Nullity = Number of columns = 3.';
+}
+choose(3);resize();
+</script>
+</body>
+</html>
