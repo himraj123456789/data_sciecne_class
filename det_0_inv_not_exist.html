@@ -1,0 +1,368 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Why Matrix Inverse Does Not Exist</title>
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;background:#080e1d;color:#eef5ff;
+ font-family:Arial,sans-serif
+}
+header{
+ text-align:center;padding:23px 12px;
+ background:linear-gradient(120deg,#12345a,#381b5c)
+}
+h1{font-size:27px;margin:0}
+header p{color:#c1d8f4}
+main{max-width:1150px;margin:auto;padding:17px}
+.panel{
+ background:#111d32;border:1px solid #304361;
+ border-radius:15px;padding:17px;margin-bottom:16px
+}
+.layout{
+ display:grid;grid-template-columns:1.5fr 1fr;gap:15px
+}
+canvas{
+ width:100%;height:430px;background:#091426;
+ border-radius:12px;display:block
+}
+h3{color:#7dd3fc;margin-top:0}
+input[type=range]{width:100%;accent-color:#38bdf8}
+button{
+ background:#2563eb;color:white;border:0;border-radius:8px;
+ padding:11px 14px;margin:4px;cursor:pointer;font-weight:bold
+}
+button:hover{filter:brightness(1.2)}
+.red{background:#dc2626}
+.green{background:#059669}
+.orange{background:#d97706}
+.purple{background:#7c3aed}
+.metric{
+ background:#091529;padding:15px;border-radius:10px;
+ margin:12px 0;text-align:center
+}
+.big{font-size:34px;font-weight:bold;color:#38bdf8}
+.formula{
+ text-align:center;padding:13px;background:#091529;
+ border-radius:10px;line-height:2;font-size:19px;margin:12px 0
+}
+.status{
+ padding:14px;border-radius:10px;background:#172c48;
+ line-height:1.6;margin-top:12px
+}
+.redtext{color:#fb7185}
+.greentext{color:#4ade80}
+.purpletext{color:#c4b5fd}
+.cards{
+ display:grid;grid-template-columns:repeat(3,1fr);gap:10px
+}
+.card{
+ background:#192a44;padding:15px;border-radius:10px;
+ text-align:center;line-height:1.6
+}
+.card strong{display:block;color:#7dd3fc;margin-bottom:6px}
+@media(max-width:800px){
+ .layout{grid-template-columns:1fr}
+ .cards{grid-template-columns:1fr}
+ canvas{height:350px}
+}
+</style>
+</head>
+<body>
+
+<header>
+<h1>🔴 WHY MATRIX INVERSE DOES NOT EXIST?</h1>
+<p>Watch a 2D square collapse into a line as determinant approaches zero</p>
+</header>
+
+<main>
+
+<div class="layout">
+ <section class="panel">
+  <h3>🌍 Geometry Lab</h3>
+  <canvas id="scene"></canvas>
+  <div class="status" id="explanation">
+   Move the slider and observe how the square changes.
+  </div>
+ </section>
+
+ <section class="panel">
+  <h3>🎮 Control the transformation</h3>
+  <p>Matrix A:</p>
+  <div class="formula">
+   A = [ 1 &nbsp; 1 ]<br>
+   &nbsp;&nbsp;&nbsp;&nbsp;[ 1 &nbsp; k ]
+  </div>
+
+  <label>Change k: <b id="kvalue">1.00</b></label>
+  <input id="slider" type="range" min="-1" max="3"
+         step="0.01" value="1">
+
+  <div class="metric">
+   <div>DETERMINANT</div>
+   <div class="big" id="det">0</div>
+   <div id="detLabel">Area = 0</div>
+  </div>
+
+  <div class="metric">
+   <div>INVERSE STATUS</div>
+   <div class="big" style="font-size:23px" id="inverseStatus">
+    NOT EXIST
+   </div>
+  </div>
+
+  <button class="red" onclick="setK(1)">Singular: k = 1</button>
+  <button class="green" onclick="setK(2)">Invertible: k = 2</button>
+  <button class="orange" onclick="setK(0)">k = 0</button>
+  <button class="purple" onclick="setK(1.5)">k = 1.5</button>
+
+  <hr style="border-color:#304361;margin:20px 0">
+
+  <h3>📐 Mathematical calculation</h3>
+  <div class="formula" id="calculation">
+   det(A) = 1 × 1 - 1 × 1 = 0
+  </div>
+  <div class="formula" id="inverseFormula">
+   A⁻¹ does not exist
+  </div>
+ </section>
+</div>
+
+<section class="panel">
+<h3>🧠 The most important observation</h3>
+<div class="cards">
+ <div class="card">
+  <strong>1. Before collapse</strong>
+  Square has area greater than zero. Different points have different outputs.
+ </div>
+ <div class="card">
+  <strong>2. At determinant = 0</strong>
+  Square becomes a line. Area becomes zero. Some different points overlap.
+ </div>
+ <div class="card">
+  <strong>3. Inverse impossible</strong>
+  We cannot uniquely determine the original point from the transformed point.
+ </div>
+</div>
+</section>
+
+<section class="panel">
+<h3>🔍 The information-loss experiment</h3>
+<p>Consider two different points:</p>
+<div class="formula">
+ P = (1, 0) &nbsp;&nbsp;&nbsp;&nbsp; Q = (0, 1)
+</div>
+<div class="formula" id="points">
+ A × P = (1, 1)<br>
+ A × Q = (1, 1)
+</div>
+<div class="status" id="collision">
+ Both points have the same transformed position!
+</div>
+</section>
+
+<section class="panel">
+<h3>🎓 Remember this relationship</h3>
+<div class="formula">
+ det(A) ≠ 0 &nbsp; → &nbsp; Inverse exists
+ <br>
+ det(A) = 0 &nbsp; → &nbsp; Inverse does not exist
+</div>
+<p style="line-height:1.8;color:#b9cce5">
+A transformation with nonzero determinant preserves the ability to recover
+the original point. A zero determinant means at least one dimension of
+information is lost.
+</p>
+</section>
+
+</main>
+
+<script>
+const canvas=document.getElementById("scene");
+const ctx=canvas.getContext("2d");
+const slider=document.getElementById("slider");
+
+let k=1;
+
+function resize(){
+ const r=canvas.getBoundingClientRect();
+ const d=window.devicePixelRatio||1;
+ canvas.width=r.width*d;
+ canvas.height=r.height*d;
+ ctx.setTransform(d,0,0,d,0,0);
+ draw();
+}
+
+function setK(v){
+ k=v;
+ slider.value=v;
+ update();
+}
+
+function screen(x,y){
+ const w=canvas.clientWidth,h=canvas.clientHeight;
+ const s=Math.min(w,h)*0.18;
+ return [w/2+x*s,h/2-y*s];
+}
+
+function polygon(points,stroke,fill){
+ ctx.beginPath();
+ points.forEach((p,i)=>{
+  const q=screen(p[0],p[1]);
+  if(i===0)ctx.moveTo(q[0],q[1]);
+  else ctx.lineTo(q[0],q[1]);
+ });
+ ctx.closePath();
+ ctx.fillStyle=fill;
+ ctx.fill();
+ ctx.strokeStyle=stroke;
+ ctx.lineWidth=3;
+ ctx.stroke();
+}
+
+function draw(){
+ const w=canvas.clientWidth,h=canvas.clientHeight;
+ ctx.clearRect(0,0,w,h);
+
+ const s=Math.min(w,h)*0.18;
+ const ox=w/2,oy=h/2;
+
+ // Grid
+ ctx.strokeStyle="#1b2e49";
+ ctx.lineWidth=1;
+ for(let i=-8;i<=8;i++){
+  ctx.beginPath();
+  ctx.moveTo(ox+i*s,0);
+  ctx.lineTo(ox+i*s,h);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(0,oy-i*s);
+  ctx.lineTo(w,oy-i*s);
+  ctx.stroke();
+ }
+
+ // Axes
+ ctx.strokeStyle="#8ba7ca";
+ ctx.lineWidth=2;
+ ctx.beginPath();
+ ctx.moveTo(0,oy);ctx.lineTo(w,oy);
+ ctx.moveTo(ox,0);ctx.lineTo(ox,h);
+ ctx.stroke();
+
+ // Original unit square
+ polygon([[0,0],[1,0],[1,1],[0,1]],
+  "#38bdf8","rgba(56,189,248,.12)");
+
+ // Transformed square under A = [[1,1],[1,k]]
+ const transformed=[
+  [0,0],
+  [1,1],
+  [1+k,1+k],
+  [1, k]
+ ];
+ // Correct columns: (1,1) and (1,k)
+ const shape=[
+  [0,0],
+  [1,1],
+  [2,1+k],
+  [1,k]
+ ];
+
+ polygon(shape,"#f472b6","rgba(244,114,182,.22)");
+
+ // Basis vectors
+ function arrow(x,y,color,label){
+  const p=screen(x,y);
+  ctx.strokeStyle=color;
+  ctx.lineWidth=4;
+  ctx.beginPath();ctx.moveTo(ox,oy);ctx.lineTo(p[0],p[1]);ctx.stroke();
+  ctx.fillStyle=color;
+  ctx.beginPath();ctx.arc(p[0],p[1],5,0,7);ctx.fill();
+  ctx.font="bold 13px Arial";
+  ctx.fillText(label,p[0]+8,p[1]-8);
+ }
+
+ arrow(1,1,"#fbbf24","A e₁");
+ arrow(1,k,"#4ade80","A e₂");
+
+ // Point collision experiment
+ const p=screen(1,1);
+ const q=screen(1,k);
+ ctx.fillStyle="#fff";
+ ctx.font="bold 12px Arial";
+ ctx.fillText("P",p[0]+9,p[1]-12);
+ ctx.fillText("Q",q[0]+9,q[1]+17);
+
+ ctx.fillStyle="#cbd5e1";
+ ctx.font="12px Arial";
+ ctx.fillText("Original square: blue",12,20);
+ ctx.fillStyle="#f472b6";
+ ctx.fillText("Transformed square: pink",12,38);
+ ctx.fillStyle="#fbbf24";
+ ctx.fillText("e₁",12,56);
+ ctx.fillStyle="#4ade80";
+ ctx.fillText("e₂",12,74);
+}
+
+function update(){
+ k=Number(slider.value);
+ const det=k-1;
+
+ document.getElementById("kvalue").textContent=k.toFixed(2);
+ document.getElementById("det").textContent=det.toFixed(2);
+ document.getElementById("detLabel").textContent=
+  "Area scale = "+Math.abs(det).toFixed(2);
+
+ const singular=Math.abs(det)<0.00001;
+
+ if(singular){
+  document.getElementById("inverseStatus").textContent=
+   "NOT EXIST";
+  document.getElementById("inverseStatus").className=
+   "big redtext";
+  document.getElementById("explanation").innerHTML=
+   "<b class='redtext'>COLLAPSE!</b> Both basis vectors are identical. "+
+   "The square has collapsed into a straight line. Its area is zero.";
+  document.getElementById("inverseFormula").innerHTML=
+   "<span class='redtext'>A⁻¹ does not exist</span>";
+ }else{
+  document.getElementById("inverseStatus").textContent=
+   "EXISTS ✓";
+  document.getElementById("inverseStatus").className=
+   "big greentext";
+  document.getElementById("explanation").innerHTML=
+   "<b class='greentext'>Invertible transformation!</b> "+
+   "The transformed shape has nonzero area. Its original coordinates "+
+   "can be recovered using A⁻¹.";
+  document.getElementById("inverseFormula").innerHTML=
+   `A⁻¹ = 1/${det.toFixed(2)} [
+    ${k.toFixed(2)} &nbsp; -1
+    ]<br>[ -1 &nbsp; 1 ]`;
+ }
+
+ document.getElementById("calculation").innerHTML=
+ `det(A) = (1 × ${k.toFixed(2)}) - (1 × 1)<br>
+ = ${det.toFixed(2)}`;
+
+ document.getElementById("points").innerHTML=
+ `A × P = (1, 1)<br>A × Q = (1, ${k.toFixed(2)})`;
+
+ document.getElementById("collision").innerHTML=singular?
+ "<b class='redtext'>COLLISION!</b> P and Q become the same point (1,1). "+
+ "Two different inputs produce the same output. Information is lost.":
+ "The points have different transformed positions. Their original "+
+ "coordinates can be recovered because the matrix is invertible.";
+
+ draw();
+}
+
+slider.addEventListener("input",update);
+window.addEventListener("resize",resize);
+update();
+resize();
+</script>
+</body>
+</html>
