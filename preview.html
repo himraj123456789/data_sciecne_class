@@ -1,0 +1,382 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Linear Combination Simulator</title>
+<style>
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f1f5f9;
+  color: #172033;
+}
+header {
+  background: #172554;
+  color: white;
+  text-align: center;
+  padding: 22px 12px;
+}
+header h1 { margin: 0 0 8px; }
+header p { margin: 0; color: #dbeafe; }
+.container {
+  max-width: 1100px;
+  margin: auto;
+  padding: 18px;
+}
+.card {
+  background: white;
+  border-radius: 13px;
+  padding: 18px;
+  margin-bottom: 16px;
+  box-shadow: 0 3px 12px #0000000c;
+}
+h2 { margin-top: 0; color: #1e3a8a; }
+.formula {
+  text-align: center;
+  font-size: 25px;
+  font-weight: bold;
+  padding: 15px;
+  background: #eff6ff;
+  border-radius: 10px;
+  color: #1d4ed8;
+}
+.controls {
+  display: grid;
+  grid-template-columns: repeat(2,1fr);
+  gap: 18px;
+}
+.control {
+  background: #f8fafc;
+  padding: 15px;
+  border-radius: 10px;
+}
+.control label {
+  display: flex;
+  justify-content: space-between;
+  font-weight: bold;
+  margin-bottom: 12px;
+}
+input[type=range] { width: 100%; }
+.value { font-size: 20px; }
+canvas {
+  width: 100%;
+  height: 430px;
+  display: block;
+  border: 1px solid #dbe3ef;
+  border-radius: 10px;
+  background: white;
+}
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  margin-top: 12px;
+  font-size: 14px;
+}
+.legend span::before {
+  content: "";
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-right: 6px;
+  border-radius: 3px;
+}
+.u::before { background: #2563eb; }
+.v::before { background: #16a34a; }
+.result::before { background: #dc2626; }
+.result-box {
+  background: #fef2f2;
+  padding: 15px;
+  border-radius: 10px;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+button {
+  border: 0;
+  background: #1d4ed8;
+  color: white;
+  padding: 11px 17px;
+  border-radius: 8px;
+  cursor: pointer;
+  margin: 5px 5px 5px 0;
+}
+button:hover { background: #1e40af; }
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+td,th {
+  border: 1px solid #dbe3ef;
+  padding: 10px;
+  text-align: center;
+}
+th { background: #eff6ff; }
+@media(max-width:650px) {
+  .controls { grid-template-columns: 1fr; }
+  canvas { height: 350px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Linear Combination Visualizer</h1>
+  <p>Understand vectors through geometry and interaction</p>
+</header>
+
+<div class="container">
+
+<div class="card">
+  <h2>1. Basic concept</h2>
+  <div class="formula">W = aU + bV</div>
+  <p>We combine two vectors by multiplying them with scalar
+  coefficients and adding their results.</p>
+  <p><b>Vector U:</b> (2, 1)</p>
+  <p><b>Vector V:</b> (1, 3)</p>
+</div>
+
+<div class="card">
+  <h2>2. Change the coefficients</h2>
+  <div class="controls">
+    <div class="control">
+      <label>
+        <span>Coefficient a (vector U)</span>
+        <span class="value" id="av">2</span>
+      </label>
+      <input id="a" type="range" min="-3" max="3"
+             step="0.5" value="2">
+    </div>
+    <div class="control">
+      <label>
+        <span>Coefficient b (vector V)</span>
+        <span class="value" id="bv">3</span>
+      </label>
+      <input id="b" type="range" min="-3" max="3"
+             step="0.5" value="3">
+    </div>
+  </div>
+  <p>Try positive, negative and zero values.</p>
+  <button onclick="setValues(2,3)">Example: 2U + 3V</button>
+  <button onclick="setValues(1,0)">Only U</button>
+  <button onclick="setValues(0,1)">Only V</button>
+  <button onclick="setValues(-1,1)">Reverse U</button>
+  <button onclick="setValues(0,0)">Zero vector</button>
+</div>
+
+<div class="card">
+  <h2>3. Geometrical visualization</h2>
+  <p>
+    Blue = aU &nbsp; Green = bV (translated from aU's endpoint)
+    &nbsp; Red = resultant W
+  </p>
+  <canvas id="graph"></canvas>
+  <div class="legend">
+    <span class="u">aU contribution</span>
+    <span class="v">bV contribution</span>
+    <span class="result">Resultant W</span>
+  </div>
+</div>
+
+<div class="card">
+  <h2>4. Mathematical calculation</h2>
+  <div class="result-box" id="calculation"></div>
+</div>
+
+<div class="card">
+  <h2>5. Observe what happens</h2>
+  <table>
+    <thead>
+      <tr><th>Condition</th><th>Geometrical meaning</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>a = 0</td><td>U contributes nothing</td></tr>
+      <tr><td>b = 0</td><td>V contributes nothing</td></tr>
+      <tr><td>a is negative</td><td>U reverses direction</td></tr>
+      <tr><td>b is negative</td><td>V reverses direction</td></tr>
+      <tr><td>a = b = 0</td><td>Resultant is zero vector</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h2>6. Think like a mathematician</h2>
+  <p>What happens if both coefficients are changed?</p>
+  <p>Can you create a vector that points exactly opposite to U?</p>
+  <p>Can you produce the zero vector using nonzero coefficients?</p>
+  <p><b>Challenge:</b> Set a = 3 and b = -1.
+  Calculate the resultant vector yourself before checking below.</p>
+  <button onclick="showChallenge()">Show answer</button>
+  <p id="challenge"></p>
+</div>
+
+</div>
+
+<script>
+const canvas = document.getElementById("graph");
+const ctx = canvas.getContext("2d");
+const aInput = document.getElementById("a");
+const bInput = document.getElementById("b");
+
+const U = [2, 1];
+const V = [1, 3];
+
+function setValues(a,b) {
+  aInput.value = a;
+  bInput.value = b;
+  update();
+}
+
+function arrow(x1,y1,x2,y2,color,width=3) {
+  const angle = Math.atan2(y2-y1,x2-x1);
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = width;
+  ctx.beginPath();
+  ctx.moveTo(x1,y1);
+  ctx.lineTo(x2,y2);
+  ctx.stroke();
+
+  const head = 10;
+  ctx.beginPath();
+  ctx.moveTo(x2,y2);
+  ctx.lineTo(
+    x2-head*Math.cos(angle-0.45),
+    y2-head*Math.sin(angle-0.45)
+  );
+  ctx.lineTo(
+    x2-head*Math.cos(angle+0.45),
+    y2-head*Math.sin(angle+0.45)
+  );
+  ctx.closePath();
+  ctx.fill();
+}
+
+function update() {
+  const a = Number(aInput.value);
+  const b = Number(bInput.value);
+
+  document.getElementById("av").textContent = a;
+  document.getElementById("bv").textContent = b;
+
+  const au = [a*U[0], a*U[1]];
+  const bv = [b*V[0], b*V[1]];
+  const w = [au[0]+bv[0], au[1]+bv[1]];
+
+  document.getElementById("calculation").innerHTML = `
+    <b>Step 1: Multiply U by a</b><br>
+    ${a} × (2, 1) = (${au[0]}, ${au[1]})<br><br>
+    <b>Step 2: Multiply V by b</b><br>
+    ${b} × (1, 3) = (${bv[0]}, ${bv[1]})<br><br>
+    <b>Step 3: Add the vectors</b><br>
+    W = (${au[0]}, ${au[1]}) + (${bv[0]}, ${bv[1]})<br>
+    <b>Result: W = (${w[0]}, ${w[1]})</b>
+  `;
+
+  draw(au,bv,w);
+}
+
+function draw(au,bv,w) {
+  const rect = canvas.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = rect.width*dpr;
+  canvas.height = rect.height*dpr;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+
+  const width = rect.width;
+  const height = rect.height;
+  const cx = width/2;
+  const cy = height/2;
+  const scale = Math.min(width/22,height/20,25);
+
+  const X = x => cx+x*scale;
+  const Y = y => cy-y*scale;
+
+  ctx.clearRect(0,0,width,height);
+
+  // Grid
+  ctx.strokeStyle = "#e5eaf1";
+  ctx.lineWidth = 1;
+  for(let x=-15;x<=15;x++) {
+    ctx.beginPath();
+    ctx.moveTo(X(x),0);
+    ctx.lineTo(X(x),height);
+    ctx.stroke();
+  }
+  for(let y=-15;y<=15;y++) {
+    ctx.beginPath();
+    ctx.moveTo(0,Y(y));
+    ctx.lineTo(width,Y(y));
+    ctx.stroke();
+  }
+
+  // Axes
+  ctx.strokeStyle="#334155";
+  ctx.lineWidth=1.7;
+  ctx.beginPath();
+  ctx.moveTo(0,cy);
+  ctx.lineTo(width,cy);
+  ctx.moveTo(cx,0);
+  ctx.lineTo(cx,height);
+  ctx.stroke();
+
+  ctx.fillStyle="#334155";
+  ctx.font="12px Arial";
+  ctx.fillText("X",width-18,cy-9);
+  ctx.fillText("Y",cx+9,15);
+  ctx.fillText("O",cx+5,cy+15);
+
+  // Coordinate points
+  const origin=[X(0),Y(0)];
+  const p1=[X(au[0]),Y(au[1])];
+  const p2=[X(w[0]),Y(w[1])];
+
+  // aU from origin
+  arrow(...origin,...p1,"#2563eb",3.5);
+
+  // bV translated to endpoint of aU
+  const p3=[X(au[0]+bv[0]),Y(au[1]+bv[1])];
+  arrow(...p1,...p3,"#16a34a",3.5);
+
+  // Resultant from origin
+  arrow(...origin,...p2,"#dc2626",4.5);
+
+  // Dashed parallelogram guide
+  ctx.save();
+  ctx.setLineDash([5,5]);
+  ctx.strokeStyle="#64748b";
+  ctx.lineWidth=1.5;
+  ctx.beginPath();
+  ctx.moveTo(p1[0],p1[1]);
+  ctx.lineTo(p3[0],p3[1]);
+  ctx.lineTo(p2[0],p2[1]);
+  ctx.stroke();
+  ctx.restore();
+
+  // Labels
+  ctx.font="bold 13px Arial";
+  ctx.fillStyle="#2563eb";
+  ctx.fillText("aU",p1[0]+5,p1[1]-9);
+  ctx.fillStyle="#16a34a";
+  ctx.fillText("bV",p3[0]+5,p3[1]-9);
+  ctx.fillStyle="#dc2626";
+  ctx.fillText("W ("+w[0]+", "+w[1]+")",
+    p2[0]+7,p2[1]-12);
+}
+
+function showChallenge() {
+  document.getElementById("challenge").textContent =
+    "3U - V = 3(2,1) - (1,3) = (6,3) - (1,3) = (5,0).";
+  setValues(3,-1);
+}
+
+aInput.addEventListener("input",update);
+bInput.addEventListener("input",update);
+window.addEventListener("resize",update);
+update();
+</script>
+
+</body>
+</html>
