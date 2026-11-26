@@ -1,0 +1,326 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Null Space - The Vector Black Hole</title>
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;font-family:Arial,sans-serif;color:#f4f5ff;
+ background:radial-gradient(circle at top,#202b55,#090d1d 70%);
+}
+header{text-align:center;padding:25px 12px 12px}
+h1{margin:0;font-size:clamp(25px,4vw,38px)}
+header p{color:#b8c5e8;margin:10px}
+.container{max-width:1100px;margin:auto;padding:15px}
+.panel{
+ background:#151e37;border:1px solid #344368;
+ border-radius:18px;padding:18px;margin-bottom:16px;
+ box-shadow:0 10px 30px #0004;
+}
+.modes{display:flex;gap:10px;flex-wrap:wrap}
+button{
+ border:0;border-radius:12px;padding:12px 17px;
+ font-weight:bold;cursor:pointer;color:white;
+ background:#344368;transition:.2s;
+}
+button:hover{transform:translateY(-2px)}
+button.active{background:#8057ee;box-shadow:0 0 18px #8057ee66}
+button.play{background:#08a88a}
+button.reset{background:#cf5371}
+.canvas-wrap{
+ width:100%;height:390px;background:#0c1429;
+ border-radius:14px;overflow:hidden;position:relative;
+ border:1px solid #344368;
+}
+canvas{width:100%;height:100%;display:block}
+.legend{
+ display:flex;gap:15px;flex-wrap:wrap;margin:12px 0;
+ color:#cbd5ee;font-size:13px
+}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px}
+.controls{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:15px}
+input[type=range]{flex:1;min-width:150px;accent-color:#a78bfa}
+.progress{font-weight:bold;color:#b9a1ff;min-width:48px}
+.info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
+.info{
+ background:#202c49;padding:15px;border-radius:13px;
+ border:1px solid #3a4b70
+}
+.info h3{margin:0 0 10px;color:#a9c4ff;font-size:16px}
+.math{font-family:monospace;font-size:17px;line-height:1.8;color:#ffe6a6}
+.big{font-size:22px;font-weight:bold;color:#79e6cb}
+.explain{color:#d2dcf2;line-height:1.65}
+#status{font-size:17px;font-weight:bold;color:#7ee7cf}
+.footer{text-align:center;color:#9aa9cc;padding:15px}
+@media(max-width:600px){.canvas-wrap{height:320px}.panel{padding:13px}}
+</style>
+</head>
+<body>
+<header>
+ <h1>🕳️ The Null Space Black Hole</h1>
+ <p>Watch an entire line or plane of vectors disappear into ZERO! 💥</p>
+</header>
+
+<div class="container">
+ <section class="panel">
+  <h2>🎮 Choose your experiment</h2>
+  <div class="modes">
+   <button id="lineBtn" class="active" onclick="setMode('line')">🧵 Null Space = Line</button>
+   <button id="planeBtn" onclick="setMode('plane')">🪂 Null Space = Plane</button>
+  </div>
+  <p class="explain" id="modeDescription"></p>
+ </section>
+
+ <section class="panel">
+  <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap">
+   <h2>🌌 Watch the transformation</h2>
+   <span id="status">Ready for launch 🚀</span>
+  </div>
+  <div class="canvas-wrap">
+   <canvas id="scene"></canvas>
+  </div>
+  <div class="legend">
+   <span><i class="dot" style="background:#f7c85b"></i>Null-space vectors</span>
+   <span><i class="dot" style="background:#54d8ff"></i>Surviving directions</span>
+   <span><i class="dot" style="background:#ff739b"></i>Transformed vectors</span>
+   <span>🎯 Origin</span>
+  </div>
+  <div class="controls">
+   <button class="play" onclick="play()">▶ Animate</button>
+   <button class="reset" onclick="reset()">↺ Reset</button>
+   <label for="progress">Transformation:</label>
+   <input id="progress" type="range" min="0" max="100" value="0">
+   <span class="progress" id="percent">0%</span>
+  </div>
+  <p class="explain">Drag the slider to control how far the vectors travel towards the origin. At 100%, every vector in the null space becomes zero!</p>
+ </section>
+
+ <section class="info-grid">
+  <div class="info">
+   <h3>📥 Input vectors</h3>
+   <div class="math" id="inputInfo"></div>
+  </div>
+  <div class="info">
+   <h3>⚙️ Transformation matrix</h3>
+   <div class="math" id="matrixInfo"></div>
+  </div>
+  <div class="info">
+   <h3>📤 Output vectors</h3>
+   <div class="math" id="outputInfo"></div>
+  </div>
+  <div class="info">
+   <h3>🧠 Mathematical result</h3>
+   <div class="big" id="nullityInfo"></div>
+   <p class="explain" id="resultInfo"></p>
+  </div>
+ </section>
+
+ <section class="panel">
+  <h2>💡 What just happened?</h2>
+  <p class="explain" id="lesson">
+   A matrix can completely destroy certain input directions. These directions form its null space.
+  </p>
+  <p class="math">N(A) = { x : Ax = 0 }</p>
+  <p class="explain">Remember: the entire line or plane is not the output. It is a collection of input vectors, and every one of them gets mapped to the origin.</p>
+ </section>
+</div>
+<div class="footer">Made for curious mathematicians 🧑‍🚀 | Linear Algebra × Data Science</div>
+
+<script>
+const canvas=document.getElementById('scene');
+const ctx=canvas.getContext('2d');
+const slider=document.getElementById('progress');
+let mode='line',t=0,animating=false,last=0,raf;
+const emojis=['😂','🚀','👻','🤖','🐸','💫','🦄','😎'];
+
+function resize(){
+ const r=canvas.getBoundingClientRect();
+ const dpr=window.devicePixelRatio||1;
+ canvas.width=r.width*dpr;canvas.height=r.height*dpr;
+ ctx.setTransform(dpr,0,0,dpr,0,0);
+ draw();
+}
+window.addEventListener('resize',resize);
+
+// Isometric 3D projection
+function project(p){
+ const [x,y,z]=p;
+ const scale=Math.min(canvas.clientWidth,canvas.clientHeight)*0.115;
+ const ox=canvas.clientWidth/2,oy=canvas.clientHeight*.53;
+ return [ox+(x-y)*scale*.85,oy+(x+y)*scale*.42-z*scale];
+}
+function line(a,b,color,width=2,dash=[]){
+ const A=project(a),B=project(b);
+ ctx.beginPath();ctx.setLineDash(dash);
+ ctx.moveTo(...A);ctx.lineTo(...B);
+ ctx.strokeStyle=color;ctx.lineWidth=width;ctx.stroke();
+ ctx.setLineDash([]);
+}
+function point(p,color,r=4,emoji){
+ const [x,y]=project(p);
+ ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);
+ ctx.fillStyle=color;ctx.fill();
+ if(emoji){
+  ctx.font='19px Arial';ctx.textAlign='center';
+  ctx.fillText(emoji,x,y-12);
+ }
+}
+function text(str,p,color='#fff'){
+ const [x,y]=project(p);
+ ctx.font='bold 12px Arial';ctx.fillStyle=color;
+ ctx.fillText(str,x+7,y-7);
+}
+function axes(){
+ const L=3.4;
+ line([-L,0,0],[L,0,0],'#54d8ff',2);
+ line([0,-L,0],[0,L,0],'#54d8ff',2);
+ line([0,0,-L],[0,0,L],'#54d8ff',2);
+ text('X',[L,0,0],'#54d8ff');
+ text('Y',[0,L,0],'#54d8ff');
+ text('Z',[0,0,L],'#54d8ff');
+ point([0,0,0],'#fff',6,'🎯');
+}
+function grid(){
+ for(let i=-3;i<=3;i++){
+  line([i,-3,0],[i,3,0],'#283650',.7);
+  line([-3,i,0],[3,i,0],'#283650',.7);
+ }
+}
+function drawPlane(alpha){
+ // Kernel plane: x=0, the YZ plane
+ const corners=[ [0,-2.5,-2.5],[0,2.5,-2.5],
+ [0,2.5,2.5],[0,-2.5,2.5] ];
+ ctx.beginPath();
+ corners.forEach((p,i)=>{
+  const q=project(p);
+  if(i===0)ctx.moveTo(...q);else ctx.lineTo(...q);
+ });
+ ctx.closePath();ctx.fillStyle=`rgba(247,200,91,${alpha*.22})`;
+ ctx.fill();ctx.strokeStyle='#f7c85b';ctx.lineWidth=2;
+ ctx.stroke();
+}
+function drawLine(alpha){
+ line([0,0,-3],[0,0,3],`rgba(247,200,91,${alpha})`,5);
+}
+function draw(){
+ const w=canvas.clientWidth,h=canvas.clientHeight;
+ ctx.clearRect(0,0,w,h);
+ grid();axes();
+ const q=1-t;
+ const origin=[0,0,0];
+
+ if(mode==='line'){
+  // Null space is z-axis. A=diag(1,1,0).
+  drawLine(1);
+  // Several points along the null-space line
+  for(let i=-5;i<=5;i++){
+   const z=i*.48;
+   const start=[0,0,z];
+   const end=[0,0,z*q];
+   line(origin,start,'#725d30',1,[3,4]);
+   line(start,end,'#f7c85b',2);
+   point(end,'#ff739b',5, t>.7?emojis[(i+5)%emojis.length]:null);
+   if(i%2===0)point(start,'#f7c85b',4);
+  }
+  // Show a vector outside the null space surviving
+  const v=[2,1,0],out=[2,1,0];
+  line(origin,v,'#54d8ff',3);
+  point(v,'#54d8ff',5);
+  text('Survives!',v,'#54d8ff');
+ }else{
+  // Null space is the YZ plane. A=diag(1,0,0).
+  drawPlane(1);
+  for(let y=-2;y<=2;y++){
+   for(let z=-2;z<=2;z++){
+    const start=[0,y*.65,z*.65];
+    const end=[0,y*.65*q,z*.65*q];
+    line(start,end,'#f7c85b',1.5);
+    point(end,'#ff739b',4,
+      (t>.72 && (y+z)%2===0)?emojis[Math.abs(y+z+4)%emojis.length]:null);
+    if(t===0)point(start,'#f7c85b',3);
+   }
+  }
+  // A vector along X survives
+  const v=[2.6,0,0];
+  line(origin,v,'#54d8ff',3);
+  point(v,'#54d8ff',5);
+  text('Survives!',v,'#54d8ff');
+ }
+ // Origin glow
+ const O=project(origin);
+ ctx.beginPath();ctx.arc(O[0],O[1],10,0,Math.PI*2);
+ ctx.strokeStyle=`rgba(255,115,155,${.3+.7*t})`;
+ ctx.lineWidth=2;ctx.stroke();
+ ctx.font='bold 12px Arial';ctx.fillStyle='#ff9db7';
+ ctx.fillText(t===1?'EVERY VECTOR = ZERO! 💥':'ORIGIN 🎯',O[0]+13,O[1]+19);
+}
+function update(){
+ slider.value=Math.round(t*100);
+ document.getElementById('percent').textContent=Math.round(t*100)+'%';
+ document.getElementById('status').textContent=
+  t===0?'Ready for launch 🚀':t===1?'BOOM! All collapsed 💥':'Collapsing... 🌀';
+ const q=1-t;
+ if(mode==='line'){
+  document.getElementById('inputInfo').innerHTML=
+   'x = (0, 0, s)<br>s = any real number';
+  document.getElementById('matrixInfo').innerHTML=
+   'A = [1 0 0]<br>　　[0 1 0]<br>　　[0 0 0]';
+  document.getElementById('outputInfo').innerHTML=
+   'Ax = (0, 0, '+q.toFixed(2)+'s)<br>At 100%: (0, 0, 0)';
+  document.getElementById('nullityInfo').textContent='Nullity = 1';
+  document.getElementById('resultInfo').textContent=
+   'The Z-axis is the null space. Every vector along this line is mapped to zero.';
+  document.getElementById('lesson').textContent=
+   '🧵 A whole line of vectors along the Z-axis is crushed into one point: the origin. The X and Y directions survive.';
+ }else{
+  document.getElementById('inputInfo').innerHTML=
+   'x = (0, s, r)<br>s, r = any real numbers';
+  document.getElementById('matrixInfo').innerHTML=
+   'A = [1 0 0]<br>　　[0 0 0]<br>　　[0 0 0]';
+  document.getElementById('outputInfo').innerHTML=
+   'Ax = (0, 0, 0)<br>At 100%: (0, 0, 0)';
+  document.getElementById('nullityInfo').textContent='Nullity = 2';
+  document.getElementById('resultInfo').textContent=
+   'The entire YZ plane is the null space. Every vector on that plane is mapped to zero.';
+  document.getElementById('lesson').textContent=
+   '🪂 Imagine a whole sheet of paper lying in the YZ plane. The transformation crushes every point on that sheet to the origin. Only the X direction survives.';
+ }
+ draw();
+}
+slider.addEventListener('input',()=>{
+ animating=false;t=Number(slider.value)/100;update();
+});
+function setMode(m){
+ mode=m;t=0;animating=false;
+ document.getElementById('lineBtn').classList.toggle('active',m==='line');
+ document.getElementById('planeBtn').classList.toggle('active',m==='plane');
+ document.getElementById('modeDescription').textContent=m==='line'
+ ?'🧵 A line of vectors along the Z-axis gets mapped to the origin. Matrix: diag(1, 1, 0).'
+ :'🪂 Every vector on the YZ plane gets mapped to the origin. Matrix: diag(1, 0, 0).';
+ update();
+}
+function play(){
+ if(animating)return;
+ if(t>=1)t=0;
+ animating=true;last=0;
+ function step(now){
+  if(!animating)return;
+  if(!last)last=now;
+  t=Math.min(1,t+(now-last)/2800);
+  last=now;update();
+  if(t<1)raf=requestAnimationFrame(step);
+  else animating=false;
+ }
+ raf=requestAnimationFrame(step);
+}
+function reset(){
+ animating=false;cancelAnimationFrame(raf);t=0;update();
+}
+setMode('line');
+resize();
+</script>
+</body>
+</html>
