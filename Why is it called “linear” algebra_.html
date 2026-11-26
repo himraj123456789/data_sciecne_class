@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Why is it called “linear” algebra?</title>
+<style>
+:root{--bg:#f7f8fa;--panel:#fff;--ink:#1c2230;--mute:#667085;--grid:#d5dae3;--ghost:#aab2c0;--a:#d6336c;--b:#1c7ed6;--hl:#e8590c;--ok:#2b8a3e;--bad:#c92a2a;--line:#e1e5ec;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#12151c;--panel:#1a1f29;--ink:#e8ebf2;--mute:#9aa4b5;--grid:#2d3442;--ghost:#4a5366;--a:#f06595;--b:#4dabf7;--hl:#ff922b;--ok:#69db7c;--bad:#ff6b6b;--line:#2a303c}}
+:root[data-theme="dark"]{--bg:#12151c;--panel:#1a1f29;--ink:#e8ebf2;--mute:#9aa4b5;--grid:#2d3442;--ghost:#4a5366;--a:#f06595;--b:#4dabf7;--hl:#ff922b;--ok:#69db7c;--bad:#ff6b6b;--line:#2a303c}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Georgia,"Iowan Old Style",serif}
+main{max-width:1000px;margin:0 auto;padding:20px 16px 40px}
+h1{font-size:clamp(1.5rem,4vw,2.2rem);line-height:1.15;margin:.2em 0 .3em}
+p{margin:.4em 0;max-width:68ch}
+.sub{color:var(--mute)}
+.grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:16px;margin-top:14px}
+@media(max-width:780px){.grid{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px}
+canvas{width:100%;aspect-ratio:1/1;display:block;touch-action:none;border-radius:6px;cursor:grab}
+.ui{font:14px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif}
+.row{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+button{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:6px 10px;cursor:pointer}
+button[aria-pressed="true"]{border-color:var(--b);outline:1px solid var(--b)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--b);outline-offset:2px}
+input[type=range]{width:100%}
+.mat{font:16px/1.3 ui-monospace,Menlo,Consolas,monospace;display:inline-grid;grid-template-columns:auto auto;gap:2px 14px;padding:4px 14px;border-left:2px solid var(--ink);border-right:2px solid var(--ink);border-radius:6px}
+.chk{display:flex;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px solid var(--line)}
+.ok{color:var(--ok);font-weight:600}.bad{color:var(--bad);font-weight:600}
+.i{color:var(--a)}.j{color:var(--b)}
+code{font-family:ui-monospace,Menlo,Consolas,monospace}
+</style>
+</head>
+<body>
+<main>
+<h1>Why is it called “linear” algebra?</h1>
+<p>Because every linear transformation sends <b>lines to lines</b>. Drag the arrow tips on the grid, then switch to a non-linear warp and watch the lines bend.</p>
+
+<div class="grid">
+  <div class="card"><canvas id="c" aria-label="Grid before and after transformation"></canvas></div>
+  <div class="card ui">
+    <div class="row" role="group" aria-label="Transformation type">
+      <button id="mLin" aria-pressed="true">Linear (matrix)</button>
+      <button id="mNon" aria-pressed="false">Non-linear warp</button>
+    </div>
+    <label for="t">Morph: identity → transformation (<span id="tv">1.00</span>)</label>
+    <input id="t" type="range" min="0" max="1" step="0.01" value="1">
+    <div class="row" id="presets">
+      <button data-m="1,0,0,1">Identity</button>
+      <button data-m="1,1,0,1">Shear</button>
+      <button data-m="0.5,-0.87,0.87,0.5">Rotate 60°</button>
+      <button data-m="2,0,0,0.5">Stretch</button>
+      <button data-m="1,2,0.5,1">Squash</button>
+    </div>
+    <p>Matrix <span class="sub">(columns are where <b class="i">î</b> and <b class="j">ĵ</b> land)</span></p>
+    <div class="mat" id="mat"></div>
+    <div style="margin-top:8px">
+      <div class="chk"><span>Orange line stays straight</span><span id="k1"></span></div>
+      <div class="chk"><span>Equal spacing stays equal</span><span id="k2"></span></div>
+      <div class="chk"><span>Origin stays fixed</span><span id="k3"></span></div>
+      <div class="chk"><span>Parallel grid lines stay parallel</span><span id="k4"></span></div>
+    </div>
+  </div>
+</div>
+
+<div class="card" style="margin-top:16px">
+  <p><b>The idea.</b> A transformation <code>T</code> is linear when <code>T(a·u + b·v) = a·T(u) + b·T(v)</code>. Geometrically: the orange dots are evenly spaced along a line. A linear map keeps them on a straight line, still evenly spaced, with the origin pinned in place. Everything is decided by where <span class="i">î</span> and <span class="j">ĵ</span> go, so the whole grid is just a stretched, sheared or rotated copy of itself.</p>
+  <p class="sub">Squash the matrix until its determinant is 0 and the whole plane collapses onto a line, which is still a line.</p>
+</div>
+</main>
+
+<script>
+(function(){
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+let M={a:1,b:1,c:0,d:1}; // columns: i=(a,c), j=(b,d)
+let mode='lin',t=1,drag=null,W=0,S=1;
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const R=7,N=60;
+const P0=[-4,-2.5],P1=[4,2.5],K=9;
+
+function T(x,y){
+  if(mode==='lin'){
+    const a=1+(M.a-1)*t,b=M.b*t,c=M.c*t,d=1+(M.d-1)*t;
+    return [a*x+b*y,c*x+d*y];
+  }
+  return [x+t*0.7*Math.sin(y*0.8),y+t*0.7*Math.sin(x*0.8)];
+}
+function resize(){
+  const r=cv.getBoundingClientRect(),dpr=window.devicePixelRatio||1;
+  cv.width=r.width*dpr;cv.height=r.height*dpr;W=r.width;S=W/(2*R+1);
+  ctx.setTransform(dpr,0,0,dpr,0,0);draw();
+}
+const X=x=>W/2+x*S,Y=y=>W/2-y*S;
+function path(pts){ctx.beginPath();pts.forEach((p,i)=>i?ctx.lineTo(X(p[0]),Y(p[1])):ctx.moveTo(X(p[0]),Y(p[1])));ctx.stroke()}
+function seg(f,n=N){const o=[];for(let i=0;i<=n;i++)o.push(f(-R+2*R*i/n));return o}
+function arrow(from,to,col){
+  ctx.strokeStyle=col;ctx.fillStyle=col;ctx.lineWidth=3;
+  ctx.beginPath();ctx.moveTo(X(from[0]),Y(from[1]));ctx.lineTo(X(to[0]),Y(to[1]));ctx.stroke();
+  const ang=Math.atan2(-(to[1]-from[1]),to[0]-from[0]),x=X(to[0]),y=Y(to[1]);
+  ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x-11*Math.cos(ang-.4),y-11*Math.sin(ang-.4));ctx.lineTo(x-11*Math.cos(ang+.4),y-11*Math.sin(ang+.4));ctx.fill();
+  ctx.beginPath();ctx.arc(x,y,6,0,7);ctx.fill();
+}
+function draw(){
+  ctx.clearRect(0,0,W,W);
+  // original (ghost) grid
+  ctx.lineWidth=1;ctx.strokeStyle=css('--grid');ctx.setLineDash([3,4]);
+  for(let k=-R;k<=R;k++){path([[k,-R],[k,R]]);path([[-R,k],[R,k]])}
+  ctx.setLineDash([]);
+  // transformed grid
+  ctx.strokeStyle=css('--ghost');ctx.lineWidth=1.3;
+  for(let k=-R;k<=R;k++){
+    if(k===0)continue;
+    path(seg(s=>T(k,s)));path(seg(s=>T(s,k)));
+  }
+  ctx.strokeStyle=css('--mute');ctx.lineWidth=2.2;
+  path(seg(s=>T(0,s)));path(seg(s=>T(s,0)));
+  // original orange line (ghost) and transformed
+  const lp=u=>[P0[0]+(P1[0]-P0[0])*u,P0[1]+(P1[1]-P0[1])*u];
+  ctx.strokeStyle=css('--hl');ctx.globalAlpha=.3;ctx.lineWidth=2;ctx.setLineDash([5,5]);
+  path([lp(0),lp(1)]);ctx.setLineDash([]);ctx.globalAlpha=1;
+  const dots=[];for(let i=0;i<K;i++)dots.push(lp(i/(K-1)));
+  ctx.fillStyle=css('--hl');ctx.globalAlpha=.35;
+  dots.forEach(p=>{ctx.beginPath();ctx.arc(X(p[0]),Y(p[1]),3,0,7);ctx.fill()});ctx.globalAlpha=1;
+  ctx.strokeStyle=css('--hl');ctx.lineWidth=3;
+  path(seg(u=>T(...lp(u)),80).map((_,i,a)=>T(...lp(i/80))));
+  const td=dots.map(p=>T(...p));
+  td.forEach(p=>{ctx.beginPath();ctx.arc(X(p[0]),Y(p[1]),4.5,0,7);ctx.fill()});
+  // origin
+  const o=T(0,0);ctx.fillStyle=css('--ink');ctx.beginPath();ctx.arc(X(o[0]),Y(o[1]),5,0,7);ctx.fill();
+  // basis arrows
+  const ti=T(1,0),tj=T(0,1);
+  arrow(o,ti,css('--a'));arrow(o,tj,css('--b'));
+  checks(td);
+}
+function setK(id,ok,txt){const e=document.getElementById(id);e.className=ok?'ok':'bad';e.textContent=(ok?'Yes':'No')+(txt?' ('+txt+')':'')}
+function checks(td){
+  // straightness: max distance from chord
+  const A=td[0],B=td[td.length-1],L=Math.hypot(B[0]-A[0],B[1]-A[1])||1e-9;
+  let dev=0;td.forEach(p=>{dev=Math.max(dev,Math.abs((B[0]-A[0])*(A[1]-p[1])-(A[0]-p[0])*(B[1]-A[1]))/L)});
+  setK('k1',dev<0.02,'deviation '+dev.toFixed(2));
+  const g=[];for(let i=1;i<td.length;i++)g.push(Math.hypot(td[i][0]-td[i-1][0],td[i][1]-td[i-1][1]));
+  const mx=Math.max(...g),mn=Math.min(...g);
+  setK('k2',mx-mn<0.02*Math.max(mx,.01)+1e-6,'gaps '+mn.toFixed(2)+'–'+mx.toFixed(2));
+  const o=T(0,0);setK('k3',Math.hypot(o[0],o[1])<1e-6,'at '+o[0].toFixed(1)+', '+o[1].toFixed(1));
+  // parallel: two vertical grid lines, compare direction at both ends
+  const d1=[T(2,R)[0]-T(2,-R)[0],T(2,R)[1]-T(2,-R)[1]],d2=[T(-3,R)[0]-T(-3,-R)[0],T(-3,R)[1]-T(-3,-R)[1]];
+  const cr=Math.abs(d1[0]*d2[1]-d1[1]*d2[0])/((Math.hypot(...d1)*Math.hypot(...d2))||1);
+  // also curvature of a single grid line
+  const m=T(2,0),e1=T(2,-R),e2=T(2,R);
+  const bend=Math.abs((e2[0]-e1[0])*(e1[1]-m[1])-(e1[0]-m[0])*(e2[1]-e1[1]))/(Math.hypot(e2[0]-e1[0],e2[1]-e1[1])||1);
+  setK('k4',cr<0.02&&bend<0.02);
+  const f=n=>(+n.toFixed(2)).toString();
+  const ma=1+(M.a-1)*t,mb=M.b*t,mc=M.c*t,md=1+(M.d-1)*t;
+  document.getElementById('mat').innerHTML=mode==='lin'
+    ?`<span class="i">${f(ma)}</span><span class="j">${f(mb)}</span><span class="i">${f(mc)}</span><span class="j">${f(md)}</span>`
+    :`<span class="sub" style="grid-column:1/3">no matrix exists</span>`;
+}
+// interaction
+function pos(e){const r=cv.getBoundingClientRect();return [(e.clientX-r.left-W/2)/S,-(e.clientY-r.top-W/2)/S]}
+cv.addEventListener('pointerdown',e=>{
+  if(mode!=='lin')return;
+  const p=pos(e),ti=T(1,0),tj=T(0,1);
+  const di=Math.hypot(p[0]-ti[0],p[1]-ti[1]),dj=Math.hypot(p[0]-tj[0],p[1]-tj[1]);
+  if(Math.min(di,dj)<1){drag=di<dj?'i':'j';cv.setPointerCapture(e.pointerId)}
+});
+cv.addEventListener('pointermove',e=>{
+  if(!drag)return;
+  const p=pos(e),x=Math.max(-R,Math.min(R,p[0])),y=Math.max(-R,Math.min(R,p[1]));
+  if(t<.01)t=1,document.getElementById('t').value=1,document.getElementById('tv').textContent='1.00';
+  // invert interpolation so the tip follows the pointer
+  if(drag==='i'){M.a=1+(x-1)/t;M.c=y/t}else{M.b=x/t;M.d=1+(y-1)/t}
+  draw();
+});
+['pointerup','pointercancel'].forEach(n=>cv.addEventListener(n,()=>drag=null));
+document.getElementById('t').addEventListener('input',e=>{t=+e.target.value;document.getElementById('tv').textContent=t.toFixed(2);draw()});
+function setMode(m){mode=m;document.getElementById('mLin').setAttribute('aria-pressed',m==='lin');document.getElementById('mNon').setAttribute('aria-pressed',m==='non');draw()}
+document.getElementById('mLin').onclick=()=>setMode('lin');
+document.getElementById('mNon').onclick=()=>setMode('non');
+document.getElementById('presets').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  const [a,bb,c,d]=b.dataset.m.split(',').map(Number);M={a:a,b:bb,c:c,d:d};setMode('lin');
+});
+addEventListener('resize',resize);resize();
+})();
+</script>
+</body>
+</html>
