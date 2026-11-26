@@ -1,0 +1,303 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Linear Equation Visualizer</title>
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;font-family:Arial,sans-serif;
+  background:#0b1220;color:#edf3ff;padding:22px
+}
+.container{max-width:1100px;margin:auto}
+h1{text-align:center;margin-bottom:8px}
+.subtitle{text-align:center;color:#aab9d2;margin-bottom:25px}
+.layout{display:grid;grid-template-columns:310px 1fr;gap:20px}
+.panel,.graph-panel{
+  background:#151f32;border:1px solid #293953;
+  border-radius:16px;padding:20px
+}
+h2{font-size:18px;margin-top:0}
+.equation{
+  padding:15px;border-radius:12px;margin:12px 0;
+  background:#202e45
+}
+.equation.one{border-left:4px solid #38a9ff}
+.equation.two{border-left:4px solid #ffad42}
+.eq-title{font-size:13px;color:#b5c5df;margin-bottom:10px}
+.fields{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+label{font-size:12px;color:#b5c5df}
+input{
+  width:100%;margin-top:5px;padding:9px 5px;
+  background:#0c1627;border:1px solid #40516d;
+  color:white;border-radius:7px;font-size:16px;text-align:center
+}
+button{
+  border:0;border-radius:9px;padding:11px 14px;
+  background:#347df1;color:white;font-weight:bold;
+  cursor:pointer;margin:5px 3px 5px 0
+}
+button:hover{filter:brightness(1.15)}
+.secondary{background:#33435d}
+.presets{margin-top:18px}
+.result{
+  margin-top:16px;padding:14px;border-radius:10px;
+  background:#0d192a;line-height:1.7
+}
+.result strong{color:#67d6a0}
+canvas{
+  width:100%;height:auto;display:block;
+  background:#0b1423;border-radius:12px
+}
+.legend{display:flex;gap:18px;flex-wrap:wrap;margin:12px 0;font-size:13px}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
+.math{
+  margin-top:15px;padding:14px;background:#202e45;
+  border-radius:10px;line-height:1.8;overflow-wrap:anywhere
+}
+.small{color:#aab9d2;font-size:13px;line-height:1.6}
+@media(max-width:800px){.layout{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>System of Linear Equations</h1>
+<p class="subtitle">Understand equations through geometry and matrix algebra</p>
+
+<div class="layout">
+<section class="panel">
+<h2>1. Enter your equations</h2>
+<p class="small">General form: ax + by = c</p>
+
+<div class="equation one">
+ <div class="eq-title">EQUATION 1 — BLUE LINE</div>
+ <div class="fields">
+  <label>a (x)<input id="a1" type="number" value="1" step="any"></label>
+  <label>b (y)<input id="b1" type="number" value="1" step="any"></label>
+  <label>c<input id="c1" type="number" value="5" step="any"></label>
+ </div>
+ <div id="eq1" style="margin-top:10px;font-weight:bold">x + y = 5</div>
+</div>
+
+<div class="equation two">
+ <div class="eq-title">EQUATION 2 — ORANGE LINE</div>
+ <div class="fields">
+  <label>a (x)<input id="a2" type="number" value="1" step="any"></label>
+  <label>b (y)<input id="b2" type="number" value="-1" step="any"></label>
+  <label>c<input id="c2" type="number" value="1" step="any"></label>
+ </div>
+ <div id="eq2" style="margin-top:10px;font-weight:bold">x - y = 1</div>
+</div>
+
+<button onclick="solve()">Solve & Draw</button>
+<button class="secondary" onclick="reset()">Reset</button>
+
+<div class="presets">
+ <h2>2. Try examples</h2>
+ <button class="secondary" onclick="preset(1)">One solution</button>
+ <button class="secondary" onclick="preset(2)">No solution</button>
+ <button class="secondary" onclick="preset(3)">Infinite solutions</button>
+ <button class="secondary" onclick="preset(4)">Different example</button>
+</div>
+
+<div class="result" id="result" aria-live="polite">
+<strong>Solution:</strong> Click Solve & Draw.
+</div>
+</section>
+
+<section class="graph-panel">
+<h2>3. Geometrical visualization</h2>
+<p class="small">The intersection of the two lines is the solution.</p>
+<div class="legend">
+ <span><i class="dot" style="background:#38a9ff"></i>Equation 1</span>
+ <span><i class="dot" style="background:#ffad42"></i>Equation 2</span>
+ <span><i class="dot" style="background:#67e6a5"></i>Solution</span>
+</div>
+<canvas id="graph" width="700" height="520"></canvas>
+<div class="math" id="matrix">
+<strong>Matrix representation</strong><br>
+AX = B
+</div>
+<p class="small">
+Move the mouse over the graph to inspect coordinates.
+The green point indicates the common solution.
+</p>
+</section>
+</div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const canvas=$("graph"),ctx=canvas.getContext("2d");
+const W=canvas.width,H=canvas.height;
+const scale=35, ox=W/2, oy=H/2;
+let solution=null, lines=[];
+
+function getValues(){
+ return ["a1","b1","c1","a2","b2","c2"].map(id=>Number($(id).value));
+}
+function clean(n){
+ if(Math.abs(n)<1e-9)return "0";
+ return Number(n.toFixed(3)).toString();
+}
+function equationText(a,b,c){
+ return `${clean(a)}x ${b<0?"−":"+"} ${clean(Math.abs(b))}y = ${clean(c)}`;
+}
+function pointToCanvas(x,y){
+ return [ox+x*scale,oy-y*scale];
+}
+function drawGrid(){
+ ctx.clearRect(0,0,W,H);
+ ctx.fillStyle="#0b1423";ctx.fillRect(0,0,W,H);
+
+ for(let x=-10;x<=10;x++){
+  let px=ox+x*scale;
+  ctx.beginPath();ctx.moveTo(px,0);ctx.lineTo(px,H);
+  ctx.strokeStyle=x===0?"#a7b8d1":"#23334a";
+  ctx.lineWidth=x===0?2:1;ctx.stroke();
+  if(x!==0){
+   ctx.fillStyle="#aab9d2";ctx.font="12px Arial";
+   ctx.fillText(x,px-4,oy+17);
+  }
+ }
+ for(let y=-7;y<=7;y++){
+  let py=oy-y*scale;
+  ctx.beginPath();ctx.moveTo(0,py);ctx.lineTo(W,py);
+  ctx.strokeStyle=y===0?"#a7b8d1":"#23334a";
+  ctx.lineWidth=y===0?2:1;ctx.stroke();
+  if(y!==0){
+   ctx.fillStyle="#aab9d2";ctx.font="12px Arial";
+   ctx.fillText(y,ox+8,py+4);
+  }
+ }
+ ctx.fillStyle="#e5edff";ctx.font="bold 14px Arial";
+ ctx.fillText("X",W-20,oy-10);ctx.fillText("Y",ox+10,18);
+}
+function drawLine(a,b,c,color){
+ // Draw a*x+b*y=c, clipping against canvas boundaries.
+ const pts=[];
+ function add(x,y){
+  if(Number.isFinite(x)&&Number.isFinite(y)&&
+     x>=-1e-6&&x<=W+1e-6&&y>=-1e-6&&y<=H+1e-6){
+   if(!pts.some(p=>Math.hypot(p[0]-x,p[1]-y)<1e-4))pts.push([x,y]);
+  }
+ }
+ if(Math.abs(b)>1e-10){
+  for(const px of [0,W]){
+   const x=(px-ox)/scale;
+   const y=(c-a*x)/b;
+   add(px,oy-y*scale);
+  }
+ }
+ if(Math.abs(a)>1e-10){
+  for(const py of [0,H]){
+   const y=(oy-py)/scale;
+   const x=(c-b*y)/a;
+   add(ox+x*scale,py);
+  }
+ }
+ if(pts.length>=2){
+  ctx.beginPath();ctx.moveTo(...pts[0]);ctx.lineTo(...pts[1]);
+  ctx.strokeStyle=color;ctx.lineWidth=3;ctx.stroke();
+ }
+}
+function drawPoint(x,y){
+ const [px,py]=pointToCanvas(x,y);
+ ctx.beginPath();ctx.arc(px,py,8,0,Math.PI*2);
+ ctx.fillStyle="#67e6a5";ctx.fill();
+ ctx.strokeStyle="white";ctx.lineWidth=2;ctx.stroke();
+ ctx.fillStyle="#67e6a5";ctx.font="bold 15px Arial";
+ ctx.fillText(`(${clean(x)}, ${clean(y)})`,px+13,py-13);
+}
+function draw(){
+ drawGrid();
+ if(lines.length){
+  drawLine(...lines[0],"#38a9ff");
+  drawLine(...lines[1],"#ffad42");
+ }
+ if(solution && solution.type==="unique"){
+  drawPoint(solution.x,solution.y);
+ }
+}
+function solve(){
+ const [a,b,c,d,e,f]=getValues();
+ if(![a,b,c,d,e,f].every(Number.isFinite)){
+  $("result").textContent="Please enter valid numbers.";
+  return;
+ }
+ $("eq1").textContent=equationText(a,b,c);
+ $("eq2").textContent=equationText(d,e,f);
+
+ lines=[[a,b,c],[d,e,f]];
+ const det=a*e-b*d;
+ const scaleCheck=Math.max(1,Math.abs(a*e),Math.abs(b*d));
+ const isZero=Math.abs(det)<1e-10*scaleCheck;
+ solution=null;
+
+ const D1=a*f-d*c;
+ const D2=c*e-b*f;
+
+ if(!isZero){
+  const x=D1/det,y=D2/det;
+  solution={type:"unique",x,y};
+  $("result").innerHTML=
+   `<strong>One unique solution!</strong><br>
+   x = ${clean(x)}<br>y = ${clean(y)}<br>
+   <strong>Intersection:</strong> (${clean(x)}, ${clean(y)})<br>
+   Both equations meet at this point.`;
+ }else{
+  // Proportional coefficient rows? Then compare constants too.
+  const same = Math.abs(a*f-d*c)<1e-9 &&
+               Math.abs(b*f-e*c)<1e-9;
+  if(same){
+   solution={type:"infinite"};
+   $("result").innerHTML=
+    `<strong>Infinitely many solutions!</strong><br>
+     Both equations describe the same line.<br>
+     Every point on this line satisfies both equations.`;
+  }else{
+   solution={type:"none"};
+   $("result").innerHTML=
+    `<strong>No solution!</strong><br>
+     The lines are parallel and distinct.<br>
+     They never intersect.`;
+  }
+ }
+ $("matrix").innerHTML=`
+ <strong>Matrix representation</strong><br>
+ A = [ ${clean(a)} &nbsp; ${clean(b)} ]<br>
+ &nbsp;&nbsp;&nbsp;&nbsp;[ ${clean(d)} &nbsp; ${clean(e)} ]<br>
+ X = [ x ] &nbsp;&nbsp; B = [ ${clean(c)} ]<br>
+ &nbsp;&nbsp; [ y ] &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[ ${clean(f)} ]<br>
+ <strong>AX = B</strong><br>
+ Determinant = ae − bd = ${clean(det)}<br>
+ ${isZero?"Determinant is zero: inverse method is not available.":"Nonzero determinant: unique solution exists."}`;
+ draw();
+}
+function preset(n){
+ const sets={
+  1:[1,1,5,1,-1,1],
+  2:[1,1,5,2,2,12],
+  3:[1,1,5,2,2,10],
+  4:[2,1,8,1,-1,1]
+ };
+ const vals=sets[n];
+ ["a1","b1","c1","a2","b2","c2"].forEach((id,i)=>$(id).value=vals[i]);
+ solve();
+}
+function reset(){preset(1)}
+canvas.addEventListener("mousemove",ev=>{
+ const r=canvas.getBoundingClientRect();
+ const x=(ev.clientX-r.left)*W/r.width;
+ const y=(ev.clientY-r.top)*H/r.height;
+ const gx=(x-ox)/scale,gy=(oy-y)/scale;
+ draw();
+ ctx.fillStyle="white";ctx.font="12px Arial";
+ ctx.fillText(`x: ${gx.toFixed(2)}, y: ${gy.toFixed(2)}`,12,20);
+});
+solve();
+</script>
+</body>
+</html>
