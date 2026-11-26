@@ -1,0 +1,418 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Matrix Multiplication Visual Lab</title>
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;background:#080f1e;color:#edf4ff;
+ font-family:Inter,Segoe UI,Arial,sans-serif;padding:20px;
+}
+.app{max-width:1250px;margin:auto}
+header{text-align:center;padding:15px 5px 22px}
+header h1{font-size:clamp(25px,4vw,39px);margin:0 0 9px}
+header p{color:#9fb3cf;margin:0}
+.glow{color:#67d5ff}
+.formula{
+ display:flex;justify-content:center;align-items:center;
+ flex-wrap:wrap;gap:13px;background:#14243b;
+ border:1px solid #304763;border-radius:16px;
+ padding:17px;margin-bottom:17px;font-size:23px;font-weight:700;
+}
+.formula span{color:#65d5ff}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:13px}
+.card{
+ background:linear-gradient(145deg,#172942,#101d31);
+ border:1px solid #30445f;border-radius:15px;padding:17px;
+}
+.card h3{margin:0 0 9px;font-size:16px}
+.card p{color:#aabbd0;font-size:13px;line-height:1.5}
+.matrix{
+ display:inline-grid;grid-template-columns:repeat(2,42px);
+ gap:9px 18px;position:relative;padding:8px 13px;
+ margin:8px 0;font-size:21px;font-weight:700;
+ text-align:center;line-height:1.4;
+}
+.matrix:before,.matrix:after{
+ content:"";position:absolute;top:0;bottom:0;width:7px;
+ border-top:2px solid #80d8ff;border-bottom:2px solid #80d8ff;
+}
+.matrix:before{left:0;border-left:2px solid #80d8ff}
+.matrix:after{right:0;border-right:2px solid #80d8ff}
+.blue{color:#62c8ff}.green{color:#53e0b1}
+.orange{color:#ffbf69}.pink{color:#ff83b4}
+.layout{
+ display:grid;grid-template-columns:1.55fr 1fr;
+ gap:15px;margin-top:16px;
+}
+.panel{
+ background:#142239;border:1px solid #30445f;
+ border-radius:16px;padding:16px;min-width:0;
+}
+.panel h2{font-size:18px;margin:0 0 7px}
+.muted{color:#a8bad1;font-size:13px;line-height:1.6}
+canvas{
+ width:100%;height:380px;display:block;
+ background:#0a1425;border:1px solid #253a56;
+ border-radius:12px;margin-top:12px;
+}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:12px;font-size:12px;color:#c4d4e8}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}
+.controls{display:flex;flex-wrap:wrap;gap:9px;margin-top:15px}
+button{
+ border:0;border-radius:9px;padding:12px 17px;
+ background:#2589d3;color:white;font-weight:700;
+ font-size:14px;cursor:pointer;transition:.2s;
+}
+button:hover{filter:brightness(1.18);transform:translateY(-1px)}
+button.alt{background:#30435d}
+button:disabled{opacity:.35;cursor:not-allowed;transform:none}
+.progress{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin:15px 0}
+.pstep{
+ padding:12px 5px;border:1px solid #30445f;
+ background:#0d192b;border-radius:10px;text-align:center;
+ font-size:12px;color:#9db0ca;
+}
+.pstep b{display:block;color:#fff;margin-bottom:5px}
+.pstep.active{border:1px solid #5dcaff;background:#193858;color:white}
+.pstep.done{border-color:#37b98f;color:#64e3b6}
+.calc{
+ background:#0c182b;border:1px solid #2c405b;
+ padding:14px;border-radius:12px;margin-top:12px;
+ line-height:1.85;font-size:14px;overflow-wrap:anywhere;
+}
+.calc .answer{color:#65e0b5;font-size:18px;font-weight:800}
+.valuebox{
+ display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px
+}
+.value{
+ background:#0b192b;border-radius:10px;padding:12px;
+ text-align:center;border:1px solid #2b405d;
+}
+.value small{display:block;color:#9fb3ce;margin-bottom:7px}
+.value strong{font-size:22px}
+.status{
+ margin-top:13px;border-radius:12px;padding:14px;
+ background:#102e2b;border:1px solid #278b70;
+ text-align:center;color:#7cf0bd;line-height:1.7;
+}
+.explain{margin-top:16px;line-height:1.8;color:#c6d5e9}
+.explain strong{color:#fff}
+footer{text-align:center;color:#7e91ad;font-size:12px;padding:20px}
+@media(max-width:850px){
+ .layout{grid-template-columns:1fr}
+ .cards{grid-template-columns:1fr}
+ canvas{height:320px}
+}
+@media(max-width:480px){
+ body{padding:10px}
+ .progress{grid-template-columns:1fr 1fr}
+ .formula{font-size:18px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<header>
+ <h1>Matrix Multiplication <span class="glow">Visual Lab</span></h1>
+ <p>Discover why applying B first and then A is equivalent to applying C = AB.</p>
+</header>
+
+<div class="formula">
+ <span>C = A × B</span>
+ <span style="color:#fff">→</span>
+ <span>CX = A(BX)</span>
+</div>
+
+<div class="cards">
+ <div class="card">
+  <h3 class="green">Transformation B</h3>
+  <p>Horizontal scaling: doubles the x-coordinate.</p>
+  <div class="matrix"><span>2</span><span>0</span><span>0</span><span>1</span></div>
+  <p>B: (x,y) → (2x,y)</p>
+ </div>
+ <div class="card">
+  <h3 class="orange">Transformation A</h3>
+  <p>Rotation: 90° anticlockwise.</p>
+  <div class="matrix"><span>0</span><span>-1</span><span>1</span><span>0</span></div>
+  <p>A: (x,y) → (-y,x)</p>
+ </div>
+ <div class="card">
+  <h3 class="blue">Combined C = AB</h3>
+  <p>Both transformations combined into one.</p>
+  <div class="matrix"><span>0</span><span>-1</span><span>2</span><span>0</span></div>
+  <p>C: (x,y) → (-y,2x)</p>
+ </div>
+</div>
+
+<div class="layout">
+ <div class="panel">
+  <h2 id="sceneTitle">Original vector X</h2>
+  <div class="muted" id="sceneDesc">Begin with X = (1,1). Watch how its position changes.</div>
+  <div class="progress" id="progress">
+   <div class="pstep active"><b>01</b>Original X</div>
+   <div class="pstep"><b>02</b>Apply B</div>
+   <div class="pstep"><b>03</b>Apply A</div>
+   <div class="pstep"><b>04</b>Apply C</div>
+  </div>
+  <canvas id="graph"></canvas>
+  <div class="legend">
+   <span><i class="dot" style="background:#fff"></i>Original X</span>
+   <span><i class="dot" style="background:#53e0b1"></i>After B</span>
+   <span><i class="dot" style="background:#ffbf69"></i>After A</span>
+   <span><i class="dot" style="background:#62c8ff"></i>Direct C</span>
+  </div>
+  <div class="controls">
+   <button class="alt" id="prev">← Previous</button>
+   <button id="next">Next Step →</button>
+   <button id="play">▶ Play</button>
+   <button class="alt" id="reset">↺ Reset</button>
+  </div>
+ </div>
+
+ <div class="panel">
+  <h2 id="calcTitle">Numerical calculation</h2>
+  <div class="muted">Follow the matrix multiplication and coordinate calculation.</div>
+  <div class="calc" id="calculation"></div>
+  <div class="valuebox">
+   <div class="value">
+    <small>Current x-coordinate</small>
+    <strong id="vx">1</strong>
+   </div>
+   <div class="value">
+    <small>Current y-coordinate</small>
+    <strong id="vy">1</strong>
+   </div>
+  </div>
+  <div class="status" id="status">
+   Ready! Click Next Step to begin.
+  </div>
+ </div>
+</div>
+
+<div class="panel explain">
+ <h2>What should students observe?</h2>
+ <p><strong>Step 1:</strong> The original vector is X = (1,1).</p>
+ <p><strong>Step 2:</strong> B doubles x: (1,1) becomes (2,1).</p>
+ <p><strong>Step 3:</strong> A rotates the new vector: (2,1) becomes (-1,2).</p>
+ <p><strong>Step 4:</strong> C = AB is applied directly to the original vector. It also produces (-1,2).</p>
+ <p><strong>Key mathematical idea:</strong> Matrix multiplication is associative: (AB)X = A(BX). The rightmost matrix acts first.</p>
+</div>
+<footer>Interactive classroom experiment · Linear Algebra</footer>
+</div>
+
+<script>
+const X=[1,1];
+const A=[[0,-1],[1,0]];
+const B=[[2,0],[0,1]];
+const C=[[0,-1],[2,0]];
+
+const BX=[2,1];
+const ABX=[-1,2];
+const CX=[-1,2];
+
+let step=0, timer=null;
+const canvas=document.getElementById("graph");
+const ctx=canvas.getContext("2d");
+
+function resize(){
+ const r=canvas.getBoundingClientRect();
+ const dpr=window.devicePixelRatio||1;
+ canvas.width=r.width*dpr;
+ canvas.height=r.height*dpr;
+ ctx.setTransform(dpr,0,0,dpr,0,0);
+ draw();
+}
+function draw(){
+ const w=canvas.clientWidth,h=canvas.clientHeight;
+ ctx.clearRect(0,0,w,h);
+ const scale=Math.min(w,h)/8;
+ const ox=w/2,oy=h/2;
+ const px=v=>[ox+v[0]*scale,oy-v[1]*scale];
+
+ // Grid
+ ctx.lineWidth=1;
+ ctx.strokeStyle="#1c304a";
+ for(let i=-6;i<=6;i++){
+  ctx.beginPath();ctx.moveTo(ox+i*scale,0);
+  ctx.lineTo(ox+i*scale,h);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(0,oy+i*scale);
+  ctx.lineTo(w,oy+i*scale);ctx.stroke();
+ }
+ // Axes
+ ctx.strokeStyle="#7890ad";ctx.lineWidth=1.6;
+ ctx.beginPath();ctx.moveTo(0,oy);ctx.lineTo(w,oy);ctx.stroke();
+ ctx.beginPath();ctx.moveTo(ox,h);ctx.lineTo(ox,0);ctx.stroke();
+ ctx.fillStyle="#aabbd1";ctx.font="12px Arial";
+ ctx.fillText("X axis",w-45,oy-9);
+ ctx.fillText("Y axis",ox+8,15);
+
+ // Axis tick labels
+ for(let i=-5;i<=5;i++){
+  if(i===0)continue;
+  ctx.fillStyle="#70839d";
+  ctx.fillText(i,ox+i*scale-4,oy+16);
+  ctx.fillText(i,ox+7,oy-i*scale+4);
+ }
+
+ function arrow(v,color,label,dashed=false){
+  const [x,y]=px(v),[sx,sy]=px([0,0]);
+  ctx.save();
+  ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=3;
+  ctx.setLineDash(dashed?[6,5]:[]);
+  ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(x,y);ctx.stroke();
+  ctx.setLineDash([]);
+  const angle=Math.atan2(y-sy,x-sx);
+  ctx.beginPath();ctx.moveTo(x,y);
+  ctx.lineTo(x-12*Math.cos(angle-.45),y-12*Math.sin(angle-.45));
+  ctx.lineTo(x-12*Math.cos(angle+.45),y-12*Math.sin(angle+.45));
+  ctx.closePath();ctx.fill();
+  ctx.beginPath();ctx.arc(x,y,4,0,Math.PI*2);ctx.fill();
+  ctx.font="bold 13px Arial";
+  ctx.fillText(label,x+8,y-9);
+  ctx.restore();
+ }
+
+ // Lightly show the unit square as a visual reference
+ if(step===0){
+  ctx.strokeStyle="#40536d";ctx.setLineDash([4,5]);
+  const p1=px([1,0]),p2=px([1,1]),p3=px([0,1]);
+  ctx.beginPath();ctx.moveTo(...p1);ctx.lineTo(...p2);
+  ctx.lineTo(...p3);ctx.stroke();ctx.setLineDash([]);
+ }
+ if(step===0){
+  arrow(X,"#ffffff","X (1,1)");
+ }
+ if(step===1){
+  arrow(X,"#ffffff","X",true);
+  arrow(BX,"#53e0b1","BX (2,1)");
+  // horizontal stretch guide
+  const [x,y]=px(BX);
+  ctx.fillStyle="#53e0b1";
+  ctx.font="12px Arial";
+  ctx.fillText("x doubled",x-18,y+24);
+ }
+ if(step===2){
+  arrow(BX,"#53e0b1","BX",true);
+  arrow(ABX,"#ffbf69","A(BX) (-1,2)");
+ }
+ if(step===3){
+  arrow(ABX,"#ffbf69","A(BX)",true);
+  arrow(CX,"#62c8ff","CX (-1,2)");
+  // Coincident endpoint
+  const [x,y]=px(CX);
+  ctx.beginPath();ctx.arc(x,y,10,0,Math.PI*2);
+  ctx.strokeStyle="#ffffff";ctx.lineWidth=1.5;ctx.stroke();
+  ctx.fillStyle="#fff";ctx.font="12px Arial";
+  ctx.fillText("Same endpoint!",x+12,y+18);
+ }
+ // Origin
+ ctx.fillStyle="#fff";ctx.beginPath();
+ ctx.arc(ox,oy,3,0,Math.PI*2);ctx.fill();
+}
+
+const scenes=[
+ {
+  title:"Step 1: Original vector X",
+  desc:"Start with the vector X = (1,1).",
+  calc:`<b>Given vector:</b><br>
+  X = [1, 1]ᵀ<br><br>
+  This is our starting position. We will apply two transformations to it.`,
+  x:1,y:1,
+  status:"Original vector is ready. Next, apply B."
+ },
+ {
+  title:"Step 2: Apply B first",
+  desc:"B stretches the vector horizontally. Watch the x-coordinate double.",
+  calc:`<b>Apply B × X:</b><br>
+  B = [[2,0],[0,1]]<br>
+  X = [1,1]ᵀ<br><br>
+  First coordinate:<br>
+  (2 × 1) + (0 × 1) = <b class="green">2</b><br>
+  Second coordinate:<br>
+  (0 × 1) + (1 × 1) = <b class="green">1</b><br><br>
+  <span class="answer">BX = [2,1]ᵀ</span>`,
+  x:2,y:1,
+  status:"B has doubled the x-coordinate. The new vector is (2,1)."
+ },
+ {
+  title:"Step 3: Apply A to BX",
+  desc:"Now A acts on the output of B, not on the original vector.",
+  calc:`<b>Apply A × (BX):</b><br>
+  A = [[0,-1],[1,0]]<br>
+  BX = [2,1]ᵀ<br><br>
+  First coordinate:<br>
+  (0 × 2) + (-1 × 1) = <b class="orange">-1</b><br>
+  Second coordinate:<br>
+  (1 × 2) + (0 × 1) = <b class="orange">2</b><br><br>
+  <span class="answer">A(BX) = [-1,2]ᵀ</span>`,
+  x:-1,y:2,
+  status:"A has rotated the vector 90° anticlockwise. Result: (-1,2)."
+ },
+ {
+  title:"Step 4: Apply C directly",
+  desc:"Now use the combined matrix C = AB on the original vector.",
+  calc:`<b>Combined matrix:</b><br>
+  C = AB = [[0,-1],[2,0]]<br>
+  X = [1,1]ᵀ<br><br>
+  First coordinate:<br>
+  (0 × 1) + (-1 × 1) = <b class="blue">-1</b><br>
+  Second coordinate:<br>
+  (2 × 1) + (0 × 1) = <b class="blue">2</b><br><br>
+  <span class="answer">CX = [-1,2]ᵀ</span>`,
+  x:-1,y:2,
+  status:"Verified! A(BX) = CX = (-1,2). Both methods are equivalent."
+ }
+];
+
+function render(){
+ const s=scenes[step];
+ document.getElementById("sceneTitle").textContent=s.title;
+ document.getElementById("sceneDesc").textContent=s.desc;
+ document.getElementById("calculation").innerHTML=s.calc;
+ document.getElementById("vx").textContent=s.x;
+ document.getElementById("vy").textContent=s.y;
+ document.getElementById("status").textContent=s.status;
+ document.getElementById("calcTitle").textContent=
+  step===3?"Direct calculation of C × X":"Numerical calculation";
+
+ document.querySelectorAll(".pstep").forEach((el,i)=>{
+  el.classList.toggle("active",i===step);
+  el.classList.toggle("done",i<step);
+ });
+ document.getElementById("prev").disabled=step===0;
+ document.getElementById("next").disabled=step===3;
+ draw();
+}
+function stop(){
+ if(timer){clearInterval(timer);timer=null;}
+ document.getElementById("play").textContent="▶ Play";
+}
+document.getElementById("next").onclick=()=>{
+ stop();if(step<3){step++;render();}
+};
+document.getElementById("prev").onclick=()=>{
+ stop();if(step>0){step--;render();}
+};
+document.getElementById("reset").onclick=()=>{
+ stop();step=0;render();
+};
+document.getElementById("play").onclick=()=>{
+ if(timer){stop();return;}
+ if(step===3)step=0;
+ document.getElementById("play").textContent="Ⅱ Pause";
+ render();
+ timer=setInterval(()=>{
+  if(step<3){step++;render();}
+  else stop();
+ },2500);
+};
+window.addEventListener("resize",resize);
+resize();
+</script>
+</body>
+</html>
