@@ -1,0 +1,162 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Determinant Visual Lab</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;padding:18px;background:#0b1220;color:#edf4ff;font-family:Arial}
+.app{max-width:1100px;margin:auto}
+h1{text-align:center}
+.sub{text-align:center;color:#aabbd0}
+.layout{display:grid;grid-template-columns:1.4fr 1fr;gap:15px}
+.panel{background:#17263c;border:1px solid #354b68;border-radius:14px;padding:16px;margin-top:15px;min-width:0}
+canvas{width:100%;height:370px;background:#0a1729;border-radius:10px;display:block}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+label{display:block;font-size:13px;color:#b8c9df;margin-bottom:6px}
+input{width:100%;accent-color:#52caff}
+.value{font-size:20px;font-weight:bold;color:#6bd5ff}
+.math{background:#0b192b;padding:13px;border-radius:10px;line-height:1.9;margin-top:13px;overflow-wrap:anywhere}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:13px}
+.stat{background:#0b192b;padding:12px;border-radius:9px;text-align:center}
+.stat small{display:block;color:#9db2cc;margin-bottom:6px}
+.stat strong{font-size:22px}
+button{background:#2489c9;color:white;border:0;border-radius:8px;padding:10px 13px;font-weight:bold;cursor:pointer;margin:4px}
+button.alt{background:#40516c}
+@media(max-width:750px){.layout{grid-template-columns:1fr}canvas{height:320px}}
+</style>
+</head>
+<body>
+<div class="app">
+<h1>Determinant Visual Lab</h1>
+<p class="sub">Understand how a matrix changes the area and orientation of a square.</p>
+<div class="layout">
+ <div class="panel">
+  <h3>Geometrical transformation</h3>
+  <p style="color:#aabbd0;font-size:13px">Blue = original square | Green = transformed shape</p>
+  <canvas id="graph"></canvas>
+ </div>
+ <div class="panel">
+  <h3>Change matrix values</h3>
+  <div class="controls" id="inputs"></div>
+  <div class="math" id="matrix"></div>
+  <div class="stats">
+   <div class="stat"><small>Determinant</small><strong id="det">1</strong></div>
+   <div class="stat"><small>Area multiplier</small><strong id="area">1</strong></div>
+  </div>
+  <div class="math" id="meaning"></div>
+ </div>
+</div>
+<div class="panel">
+ <h3>Try these experiments</h3>
+ <button onclick="preset(2,0,0,3)">Scaling: det = 6</button>
+ <button onclick="preset(-1,0,0,1)">Reflection: det = -1</button>
+ <button onclick="preset(1,2,2,4)">Collapse: det = 0</button>
+ <button onclick="preset(1,1,0,1)">Shear: det = 1</button>
+ <button class="alt" onclick="preset(1,0,0,1)">Identity</button>
+ <div class="math">
+  <b>Formula:</b><br>
+  A = [ a &nbsp; b ]<br>
+  &nbsp;&nbsp;&nbsp;&nbsp;[ c &nbsp; d ]<br>
+  det(A) = ad − bc<br><br>
+  New area = |det(A)| × Original area
+ </div>
+</div>
+</div>
+<script>
+const ids=["a","b","c","d"];
+const initial=[1,0,0,1];
+const graph=document.getElementById("graph");
+const ctx=graph.getContext("2d");
+const values={};
+const inputs=document.getElementById("inputs");
+ids.forEach((id,i)=>{
+ const box=document.createElement("div");
+ box.innerHTML=`<label>${id.toUpperCase()} <span class="value" id="v${id}">${initial[i]}</span></label>
+ <input id="${id}" type="range" min="-2" max="3" step=".1" value="${initial[i]}">`;
+ inputs.appendChild(box);
+ values[id]=document.getElementById(id);
+ values[id].addEventListener("input",update);
+});
+function setup(){
+ const r=graph.getBoundingClientRect(),dpr=devicePixelRatio||1;
+ graph.width=r.width*dpr;graph.height=r.height*dpr;
+ ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+function draw(a,b,c,d){
+ const w=graph.clientWidth,h=graph.clientHeight;
+ ctx.clearRect(0,0,w,h);
+ const scale=Math.min(w,h)/7,ox=w/2,oy=h/2;
+ const p=(x,y)=>[ox+x*scale,oy-y*scale];
+ ctx.strokeStyle="#203650";ctx.lineWidth=1;
+ for(let i=-7;i<=7;i++){
+  const [x]=p(i,0),[,y]=p(0,i);
+  ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();
+ }
+ ctx.strokeStyle="#8da2be";ctx.lineWidth=1.5;
+ let [x0,y0]=p(0,0);
+ ctx.beginPath();ctx.moveTo(0,y0);ctx.lineTo(w,y0);ctx.stroke();
+ ctx.beginPath();ctx.moveTo(x0,0);ctx.lineTo(x0,h);ctx.stroke();
+
+ function polygon(pts,fill,color){
+  ctx.beginPath();
+  pts.forEach(([x,y],i)=>{
+   const [px,py]=p(x,y);
+   if(i===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);
+  });
+  ctx.closePath();ctx.fillStyle=fill;ctx.fill();
+  ctx.strokeStyle=color;ctx.lineWidth=2.8;ctx.stroke();
+  pts.forEach(([x,y],i)=>{
+   const [px,py]=p(x,y);
+   ctx.fillStyle=color;ctx.beginPath();ctx.arc(px,py,4,0,Math.PI*2);ctx.fill();
+   ctx.font="12px Arial";ctx.fillText(["O","P","Q","R"][i],px+7,py-7);
+  });
+ }
+ polygon([[0,0],[2,0],[2,2],[0,2]],"rgba(65,170,255,.10)","#45adff");
+ const pts=[[0,0],[2*a,2*c],[2*a+2*b,2*c+2*d],[2*b,2*d]];
+ polygon(pts,"rgba(70,220,160,.17)","#50dfa9");
+
+ // Show transformed basis vectors
+ function arrow(v,color,label){
+  const [x,y]=p(v[0],v[1]),[sx,sy]=p(0,0);
+  ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=3;
+  ctx.beginPath();ctx.moveTo(sx,sy);ctx.lineTo(x,y);ctx.stroke();
+  const ang=Math.atan2(y-sy,x-sx);
+  ctx.beginPath();ctx.moveTo(x,y);
+  ctx.lineTo(x-9*Math.cos(ang-.4),y-9*Math.sin(ang-.4));
+  ctx.lineTo(x-9*Math.cos(ang+.4),y-9*Math.sin(ang+.4));
+  ctx.closePath();ctx.fill();
+  ctx.font="bold 12px Arial";ctx.fillText(label,x+6,y-8);
+ }
+ arrow([a,c],"#ffd16e","Ae₁");
+ arrow([b,d],"#e59aff","Ae₂");
+}
+function update(){
+ const v=ids.map(id=>Number(values[id].value));
+ const [a,b,c,d]=v;
+ ids.forEach((id,i)=>document.getElementById("v"+id).textContent=v[i].toFixed(1));
+ const det=a*d-b*c;
+ document.getElementById("det").textContent=det.toFixed(2);
+ document.getElementById("area").textContent=Math.abs(det).toFixed(2);
+ document.getElementById("matrix").innerHTML=
+  `<b>A =</b><br>[ ${a.toFixed(1)} &nbsp; ${b.toFixed(1)} ]<br>[ ${c.toFixed(1)} &nbsp; ${d.toFixed(1)} ]<br><br>
+  det(A) = (${a.toFixed(1)} × ${d.toFixed(1)}) − (${b.toFixed(1)} × ${c.toFixed(1)}) = <b>${det.toFixed(2)}</b>`;
+ let meaning;
+ if(Math.abs(det)<0.00001)meaning="Zero determinant: the square collapses into a line or point. The transformation is not invertible.";
+ else if(det<0)meaning="Negative determinant: orientation is reversed. Area is multiplied by "+Math.abs(det).toFixed(2)+".";
+ else meaning="Positive determinant: orientation is preserved. Area is multiplied by "+det.toFixed(2)+".";
+ document.getElementById("meaning").textContent=meaning;
+ draw(a,b,c,d);
+}
+function preset(a,b,c,d){
+ [a,b,c,d].forEach((v,i)=>values[ids[i]].value=v);
+ update();
+}
+window.addEventListener("resize",()=>{setup();update()});
+setup();update();
+</script>
+</body>
+</html>
