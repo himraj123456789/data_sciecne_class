@@ -1,0 +1,661 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Matrix Inverse - Visual Lab</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: #080f20;
+    color: #e8f0ff;
+    font-family: Arial, sans-serif;
+}
+
+header {
+    text-align: center;
+    padding: 22px 10px;
+    background: linear-gradient(120deg,#142b50,#25134b);
+}
+
+header h1 {
+    margin: 0;
+    font-size: 29px;
+}
+
+header p {
+    color: #b7c8e8;
+    margin-bottom: 0;
+}
+
+.container {
+    max-width: 1250px;
+    margin: auto;
+    padding: 18px;
+}
+
+.dashboard {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 310px;
+    gap: 18px;
+}
+
+.panel {
+    background: #111d32;
+    border: 1px solid #283c5c;
+    border-radius: 15px;
+    padding: 16px;
+    margin-bottom: 15px;
+}
+
+canvas {
+    width: 100%;
+    height: 480px;
+    display: block;
+    background: #0b1425;
+    border-radius: 12px;
+}
+
+h3 {
+    margin-top: 0;
+    color: #8ccaff;
+}
+
+.matrix {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin: 15px 0;
+}
+
+input[type=number] {
+    width: 100%;
+    padding: 12px;
+    background: #091529;
+    border: 1px solid #45618a;
+    border-radius: 8px;
+    color: #fff;
+    text-align: center;
+    font-size: 19px;
+}
+
+button {
+    padding: 11px 13px;
+    border: none;
+    border-radius: 8px;
+    background: #2563eb;
+    color: white;
+    cursor: pointer;
+    font-weight: bold;
+    margin: 4px 2px;
+}
+
+button:hover {
+    background: #4385ff;
+}
+
+.green { background: #059669; }
+.purple { background: #7c3aed; }
+.orange { background: #d97706; }
+.gray { background: #475569; }
+
+.formula {
+    background: #081629;
+    border: 1px solid #314969;
+    border-radius: 10px;
+    padding: 14px;
+    text-align: center;
+    margin: 10px 0;
+    line-height: 1.9;
+    font-size: 17px;
+}
+
+.value {
+    font-size: 25px;
+    font-weight: bold;
+    color: #5eead4;
+}
+
+.status {
+    color: #a8c6ed;
+    line-height: 1.6;
+    font-size: 14px;
+}
+
+.legend {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    font-size: 13px;
+    margin: 12px 0;
+}
+
+.dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 5px;
+}
+
+.steps {
+    display: grid;
+    grid-template-columns: repeat(3,1fr);
+    gap: 10px;
+}
+
+.step {
+    padding: 13px;
+    background: #172844;
+    border-radius: 10px;
+    text-align: center;
+}
+
+.step strong {
+    display: block;
+    margin-bottom: 8px;
+    color: #7dd3fc;
+}
+
+.point-controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+@media(max-width:850px) {
+    .dashboard { grid-template-columns: 1fr; }
+    canvas { height: 390px; }
+    .steps { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <h1>🧮 MATRIX INVERSE VISUAL LAB</h1>
+    <p>Transform the world with A and bring it back using A⁻¹</p>
+</header>
+
+<div class="container">
+
+<div class="dashboard">
+
+<div>
+    <div class="panel">
+        <h3>🌍 Interactive Coordinate Plane</h3>
+
+        <div class="legend">
+            <span><i class="dot" style="background:#38bdf8"></i>Original square</span>
+            <span><i class="dot" style="background:#f472b6"></i>Transformed square</span>
+            <span><i class="dot" style="background:#fbbf24"></i>Point P</span>
+        </div>
+
+        <canvas id="canvas"></canvas>
+
+        <p class="status" id="message">
+            Start with the original square. Apply matrix A to transform it.
+        </p>
+    </div>
+
+    <div class="panel">
+        <h3>🎮 Transformation Controls</h3>
+        <button onclick="applyA()">① Apply A</button>
+        <button class="purple" onclick="applyInverse()">② Apply A⁻¹</button>
+        <button class="green" onclick="animateCycle()">▶ Full Cycle</button>
+        <button class="gray" onclick="reset()">↺ Reset</button>
+    </div>
+
+    <div class="panel">
+        <h3>📍 Track a Point</h3>
+        <div class="point-controls">
+            <div>
+                <label>Point x</label>
+                <input type="number" id="px" value="1" step="0.5">
+            </div>
+            <div>
+                <label>Point y</label>
+                <input type="number" id="py" value="1" step="0.5">
+            </div>
+        </div>
+        <button onclick="updatePoint()">Update Point</button>
+        <div class="formula" id="pointResult">P = (1, 1)</div>
+    </div>
+</div>
+
+<div>
+
+    <div class="panel">
+        <h3>⚙️ Matrix A</h3>
+        <div class="matrix">
+            <input id="a" type="number" value="2" step="0.5">
+            <input id="b" type="number" value="1" step="0.5">
+            <input id="c" type="number" value="1" step="0.5">
+            <input id="d" type="number" value="2" step="0.5">
+        </div>
+
+        <div class="formula">
+            A = [ a &nbsp; b ]<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[ c &nbsp; d ]
+        </div>
+
+        <button onclick="calculate()" class="orange">Calculate Matrix</button>
+
+        <div style="margin-top:15px">
+            <strong>Try these matrices:</strong><br>
+            <button class="gray" onclick="preset(2,1,1,2)">Stretch</button>
+            <button class="gray" onclick="preset(0,-1,1,0)">Rotation</button>
+            <button class="gray" onclick="preset(1,2,0,1)">Shear</button>
+            <button class="gray" onclick="preset(1,0,0,0.5)">Scale</button>
+        </div>
+    </div>
+
+    <div class="panel">
+        <h3>📐 Determinant</h3>
+        <div class="formula">
+            det(A) = ad - bc
+            <div class="value" id="det">3</div>
+            <div class="status" id="detStatus">
+                Area is multiplied by 3.
+            </div>
+        </div>
+    </div>
+
+    <div class="panel">
+        <h3>🔄 Inverse Matrix</h3>
+        <div class="formula" id="inverse">
+            A⁻¹ = 1/3 [ 2 -1 ]<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[ -1 2 ]
+        </div>
+    </div>
+
+    <div class="panel">
+        <h3>🧠 Mathematical Identity</h3>
+        <div class="formula">
+            A⁻¹ × A = I
+            <br>
+            <span class="value">[ 1  0 ]</span>
+            <br>
+            <span class="value">[ 0  1 ]</span>
+        </div>
+        <p class="status">
+            The inverse reverses the transformation.
+            The identity matrix preserves the original coordinates.
+        </p>
+    </div>
+
+</div>
+</div>
+
+<div class="panel">
+    <h3>🎓 Three stages of understanding</h3>
+    <div class="steps">
+        <div class="step">
+            <strong>1. Original</strong>
+            Square has area 1. Point P is in its original position.
+        </div>
+        <div class="step">
+            <strong>2. Apply A</strong>
+            The square changes shape, size or orientation.
+        </div>
+        <div class="step">
+            <strong>3. Apply A⁻¹</strong>
+            The original shape and point positions return.
+        </div>
+    </div>
+</div>
+
+</div>
+
+<script>
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+let A = [2,1,1,2];
+let progress = 0;
+let target = 0;
+let animating = false;
+let point = [1,1];
+let mode = "original";
+let animationId;
+
+function resize() {
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    draw();
+}
+
+function determinant() {
+    return A[0]*A[3] - A[1]*A[2];
+}
+
+function inverse() {
+    let det = determinant();
+    if (Math.abs(det)<0.000001) return null;
+    return [
+        A[3]/det,
+        -A[1]/det,
+        -A[2]/det,
+        A[0]/det
+    ];
+}
+
+function multiply(M,p) {
+    return [
+        M[0]*p[0]+M[1]*p[1],
+        M[2]*p[0]+M[3]*p[1]
+    ];
+}
+
+function lerp(x,y,t) {
+    return x+(y-x)*t;
+}
+
+function transformedPoint(t) {
+    const p = multiply(A,point);
+    return [
+        lerp(point[0],p[0],t),
+        lerp(point[1],p[1],t)
+    ];
+}
+
+function draw() {
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight;
+
+    ctx.clearRect(0,0,w,h);
+
+    const scale = Math.min(w,h)*0.105;
+    const ox=w/2;
+    const oy=h/2;
+
+    function screen(p) {
+        return [ox+p[0]*scale,oy-p[1]*scale];
+    }
+
+    // Grid
+    ctx.lineWidth=1;
+    ctx.strokeStyle="#1c2e49";
+
+    for(let i=-12;i<=12;i++) {
+        let x=ox+i*scale;
+        let y=oy+i*scale;
+
+        ctx.beginPath();
+        ctx.moveTo(x,0);
+        ctx.lineTo(x,h);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(0,y);
+        ctx.lineTo(w,y);
+        ctx.stroke();
+    }
+
+    // Axes
+    ctx.strokeStyle="#7891b2";
+    ctx.lineWidth=2;
+
+    ctx.beginPath();
+    ctx.moveTo(0,oy);
+    ctx.lineTo(w,oy);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(ox,0);
+    ctx.lineTo(ox,h);
+    ctx.stroke();
+
+    ctx.fillStyle="#a6bddc";
+    ctx.font="12px Arial";
+    ctx.fillText("X",w-20,oy-10);
+    ctx.fillText("Y",ox+10,15);
+    ctx.fillText("O",ox+7,oy+16);
+
+    function polygon(points,color,fill) {
+        const coords=points.map(screen);
+        ctx.beginPath();
+        coords.forEach((p,i)=>{
+            if(i===0) ctx.moveTo(...p);
+            else ctx.lineTo(...p);
+        });
+        ctx.closePath();
+
+        ctx.fillStyle=fill;
+        ctx.fill();
+        ctx.strokeStyle=color;
+        ctx.lineWidth=3;
+        ctx.stroke();
+
+        coords.forEach((p,i)=>{
+            ctx.beginPath();
+            ctx.arc(p[0],p[1],5,0,Math.PI*2);
+            ctx.fillStyle=color;
+            ctx.fill();
+        });
+    }
+
+    // Original square
+    const original=[
+        [0,0],[1,0],[1,1],[0,1]
+    ];
+
+    polygon(original,"#38bdf8","rgba(56,189,248,.10)");
+
+    // Interpolated transformation
+    const transformed=original.map(p=>{
+        let q=multiply(A,p);
+        return [
+            lerp(p[0],q[0],progress),
+            lerp(p[1],q[1],progress)
+        ];
+    });
+
+    polygon(transformed,"#f472b6","rgba(244,114,182,.18)");
+
+    // Original basis vectors
+    const e1=multiply(A,[1,0]);
+    const e2=multiply(A,[0,1]);
+
+    function arrow(p,color,label) {
+        let s=screen(p);
+        ctx.strokeStyle=color;
+        ctx.fillStyle=color;
+        ctx.lineWidth=3;
+        ctx.beginPath();
+        ctx.moveTo(ox,oy);
+        ctx.lineTo(s[0],s[1]);
+        ctx.stroke();
+
+        let angle=Math.atan2(s[1]-oy,s[0]-ox);
+        ctx.beginPath();
+        ctx.moveTo(s[0],s[1]);
+        ctx.lineTo(s[0]-10*Math.cos(angle-.5),s[1]-10*Math.sin(angle-.5));
+        ctx.lineTo(s[0]-10*Math.cos(angle+.5),s[1]-10*Math.sin(angle+.5));
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.font="bold 13px Arial";
+        ctx.fillText(label,s[0]+7,s[1]-8);
+    }
+
+    arrow(
+        [lerp(1,e1[0],progress),lerp(0,e1[1],progress)],
+        "#fbbf24","e₁"
+    );
+
+    arrow(
+        [lerp(0,e2[0],progress),lerp(1,e2[1],progress)],
+        "#4ade80","e₂"
+    );
+
+    // Moving point
+    const p=transformedPoint(progress);
+    const ps=screen(p);
+
+    ctx.beginPath();
+    ctx.arc(ps[0],ps[1],8,0,Math.PI*2);
+    ctx.fillStyle="#fbbf24";
+    ctx.fill();
+    ctx.strokeStyle="#fff";
+    ctx.lineWidth=2;
+    ctx.stroke();
+
+    ctx.fillStyle="#fbbf24";
+    ctx.font="bold 14px Arial";
+    ctx.fillText("P",ps[0]+12,ps[1]-10);
+
+    ctx.fillStyle="#dbeafe";
+    ctx.font="12px Arial";
+    ctx.fillText("Original square",12,22);
+    ctx.fillStyle="#f472b6";
+    ctx.fillText("Transformed square",12,40);
+}
+
+function calculate() {
+    A=[
+        +document.getElementById("a").value,
+        +document.getElementById("b").value,
+        +document.getElementById("c").value,
+        +document.getElementById("d").value
+    ];
+
+    const det=determinant();
+    document.getElementById("det").textContent=det.toFixed(3);
+
+    if(Math.abs(det)<0.000001) {
+        document.getElementById("inverse").innerHTML=
+            "<span style='color:#fb7185'>Inverse does not exist!<br>Determinant = 0</span>";
+        document.getElementById("detStatus").textContent=
+            "This matrix collapses 2D space into a line or point.";
+    } else {
+        const inv=inverse();
+        document.getElementById("inverse").innerHTML=
+        `A⁻¹ = [ ${inv[0].toFixed(3)} &nbsp; ${inv[1].toFixed(3)} ]<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[ ${inv[2].toFixed(3)} &nbsp; ${inv[3].toFixed(3)} ]`;
+
+        document.getElementById("detStatus").textContent=
+        `Area is multiplied by ${Math.abs(det).toFixed(3)}. ${
+            det<0?"Orientation is also reversed.":"Orientation is preserved."
+        }`;
+    }
+
+    reset();
+}
+
+function animateTo(value) {
+    if(animating) cancelAnimationFrame(animationId);
+    animating=true;
+    const start=progress;
+    const begin=performance.now();
+    const duration=1200;
+
+    function frame(now) {
+        let t=Math.min((now-begin)/duration,1);
+        let eased=1-Math.pow(1-t,3);
+        progress=lerp(start,value,eased);
+        draw();
+
+        if(t<1) {
+            animationId=requestAnimationFrame(frame);
+        } else {
+            animating=false;
+        }
+    }
+    animationId=requestAnimationFrame(frame);
+}
+
+function applyA() {
+    if(!inverse()) {
+        alert("Matrix inverse does not exist. Choose a non-zero determinant.");
+        return;
+    }
+    mode="transformed";
+    document.getElementById("message").textContent=
+    "A applied! The square and point have moved to their transformed positions.";
+    animateTo(1);
+}
+
+function applyInverse() {
+    if(!inverse()) {
+        alert("Inverse does not exist!");
+        return;
+    }
+
+    mode="original";
+    document.getElementById("message").textContent=
+    "A⁻¹ reverses the transformation and returns the square to its original position.";
+    animateTo(0);
+}
+
+function animateCycle() {
+    if(!inverse()) {
+        alert("Choose a matrix with a non-zero determinant.");
+        return;
+    }
+    if(animating) cancelAnimationFrame(animationId);
+    progress=0;
+    draw();
+
+    setTimeout(()=>{
+        applyA();
+        setTimeout(()=>{
+            applyInverse();
+        },1400);
+    },200);
+}
+
+function reset() {
+    if(animating) cancelAnimationFrame(animationId);
+    progress=0;
+    mode="original";
+    animating=false;
+    draw();
+    document.getElementById("message").textContent=
+    "Reset complete. Apply A to see the transformation.";
+}
+
+function preset(a,b,c,d) {
+    document.getElementById("a").value=a;
+    document.getElementById("b").value=b;
+    document.getElementById("c").value=c;
+    document.getElementById("d").value=d;
+    calculate();
+}
+
+function updatePoint() {
+    point=[
+        +document.getElementById("px").value,
+        +document.getElementById("py").value
+    ];
+
+    let p2=multiply(A,point);
+    let inv=inverse();
+
+    document.getElementById("pointResult").innerHTML=
+    `Original P = (${point[0]}, ${point[1]})<br>
+    After A = (${p2[0].toFixed(2)}, ${p2[1].toFixed(2)})<br>
+    After A⁻¹ = (${inv ? multiply(inv,p2)[0].toFixed(2):"-"},
+    ${inv ? multiply(inv,p2)[1].toFixed(2):"-"})`;
+
+    draw();
+}
+
+window.addEventListener("resize",resize);
+
+calculate();
+updatePoint();
+resize();
+</script>
+</body>
+</html>
