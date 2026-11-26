@@ -1,0 +1,225 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scaling Transformation Visual Lab</title>
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;padding:20px;background:#091322;color:#edf4ff;
+ font-family:Arial,sans-serif
+}
+.app{max-width:1150px;margin:auto}
+header{text-align:center;padding:12px}
+h1{font-size:30px;margin:5px}
+header p{color:#a8bad0}
+.layout{display:grid;grid-template-columns:1.5fr 1fr;gap:15px}
+.panel{
+ background:#16253b;border:1px solid #344966;
+ border-radius:15px;padding:17px;margin-top:15px;
+ min-width:0
+}
+canvas{
+ width:100%;height:400px;display:block;
+ background:#0a1627;border-radius:12px
+}
+.control{margin:20px 0}
+input{width:100%;accent-color:#55caff}
+.value{font-size:25px;color:#60d4ff;font-weight:bold}
+button{
+ border:0;padding:11px 14px;margin:5px 4px 5px 0;
+ background:#2387c9;color:white;border-radius:9px;
+ font-weight:bold;cursor:pointer
+}
+button.alt{background:#3b4d68}
+.math{
+ background:#0b192c;border-radius:10px;padding:14px;
+ line-height:1.9;margin-top:12px;overflow-wrap:anywhere
+}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.stat{
+ padding:13px;background:#0b192c;border-radius:10px;
+ text-align:center
+}
+.stat small{color:#9db2cc;display:block;margin-bottom:7px}
+.stat strong{font-size:22px}
+@media(max-width:800px){
+ .layout{grid-template-columns:1fr}
+ canvas{height:320px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<header>
+ <h1>Scaling Transformation Lab</h1>
+ <p>Explore how a matrix changes the size and shape of geometric objects.</p>
+</header>
+
+<div class="layout">
+ <div class="panel">
+  <h2>Visual transformation</h2>
+  <p style="color:#a9bad0">Blue = original square | Green = scaled square</p>
+  <canvas id="graph"></canvas>
+ </div>
+
+ <div class="panel">
+  <h2>Control the scaling factors</h2>
+
+  <div class="control">
+   <b>X-axis scaling (Sx)</b>
+   <div class="value" id="sxVal">2.0</div>
+   <input id="sx" type="range" min="-2" max="3" step=".1" value="2">
+  </div>
+
+  <div class="control">
+   <b>Y-axis scaling (Sy)</b>
+   <div class="value" id="syVal">2.0</div>
+   <input id="sy" type="range" min="-2" max="3" step=".1" value="2">
+  </div>
+
+  <button onclick="preset(2,2)">Uniform ×2</button>
+  <button onclick="preset(2,3)">Non-uniform</button>
+  <button onclick="preset(.5,.5)">Shrink ×0.5</button>
+  <button onclick="preset(-1,1)">Reflection</button>
+  <button class="alt" onclick="preset(1,1)">Original size</button>
+
+  <div class="math" id="calculation"></div>
+ </div>
+</div>
+
+<div class="panel">
+ <h2>Geometric properties</h2>
+ <div class="stats">
+  <div class="stat">
+   <small>Original area</small>
+   <strong>4</strong>
+  </div>
+  <div class="stat">
+   <small>New area</small>
+   <strong id="area">16</strong>
+  </div>
+  <div class="stat">
+   <small>Determinant</small>
+   <strong id="det">4</strong>
+  </div>
+  <div class="stat">
+   <small>Transformation</small>
+   <strong id="type">Enlargement</strong>
+  </div>
+ </div>
+ <div class="math">
+  <b>Scaling matrix:</b><br>
+  S = [ Sx &nbsp; 0 ]<br>
+  &nbsp;&nbsp;&nbsp;&nbsp;[ 0 &nbsp; Sy ]<br><br>
+  x' = Sx × x<br>
+  y' = Sy × y<br><br>
+  <b>Area relationship:</b><br>
+  New area = |det(S)| × Original area<br>
+  det(S) = Sx × Sy
+ </div>
+</div>
+
+</div>
+<script>
+const canvas=document.getElementById("graph");
+const ctx=canvas.getContext("2d");
+const sx=document.getElementById("sx");
+const sy=document.getElementById("sy");
+
+function setup(){
+ const r=canvas.getBoundingClientRect();
+ const dpr=window.devicePixelRatio||1;
+ canvas.width=r.width*dpr;
+ canvas.height=r.height*dpr;
+ ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+function draw(){
+ const w=canvas.clientWidth,h=canvas.clientHeight;
+ ctx.clearRect(0,0,w,h);
+ const scale=Math.min(w,h)/7;
+ const ox=w/2,oy=h/2;
+ const xScale=Number(sx.value),yScale=Number(sy.value);
+ const point=(x,y)=>[ox+x*scale,oy-y*scale];
+
+ // Grid
+ ctx.strokeStyle="#1e3450";ctx.lineWidth=1;
+ for(let i=-7;i<=7;i++){
+  let [gx]=point(i,0),[,gy]=point(0,i);
+  ctx.beginPath();ctx.moveTo(gx,0);ctx.lineTo(gx,h);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(0,gy);ctx.lineTo(w,gy);ctx.stroke();
+ }
+ // Axes
+ ctx.strokeStyle="#8299b5";ctx.lineWidth=1.6;
+ let [oxp,oyp]=point(0,0);
+ ctx.beginPath();ctx.moveTo(0,oyp);ctx.lineTo(w,oyp);ctx.stroke();
+ ctx.beginPath();ctx.moveTo(oxp,0);ctx.lineTo(oxp,h);ctx.stroke();
+
+ function polygon(vertices,fill,stroke){
+  ctx.beginPath();
+  vertices.forEach(([x,y],i)=>{
+   const [px,py]=point(x,y);
+   if(i===0)ctx.moveTo(px,py);else ctx.lineTo(px,py);
+  });
+  ctx.closePath();
+  ctx.fillStyle=fill;ctx.fill();
+  ctx.strokeStyle=stroke;ctx.lineWidth=3;ctx.stroke();
+
+  vertices.forEach((v,i)=>{
+   const [px,py]=point(v[0],v[1]);
+   ctx.fillStyle=stroke;
+   ctx.beginPath();ctx.arc(px,py,4,0,Math.PI*2);ctx.fill();
+   ctx.font="12px Arial";
+   ctx.fillText(["O","P","Q","R"][i],px+7,py-8);
+  });
+ }
+
+ // Original square: 2 by 2
+ polygon([[0,0],[2,0],[2,2],[0,2]],
+ "rgba(65,171,255,.12)","#45adff");
+
+ // Transformed square
+ polygon([[0,0],[2*xScale,0],[2*xScale,2*yScale],[0,2*yScale]],
+ "rgba(64,224,169,.15)","#42dfaa");
+}
+
+function update(){
+ const x=Number(sx.value),y=Number(sy.value);
+ document.getElementById("sxVal").textContent=x.toFixed(1);
+ document.getElementById("syVal").textContent=y.toFixed(1);
+ const det=x*y,area=4*Math.abs(det);
+
+ document.getElementById("area").textContent=area.toFixed(2);
+ document.getElementById("det").textContent=det.toFixed(2);
+
+ let type;
+ if(det===0)type="Collapsed";
+ else if(x<0||y<0)type="Reflection + scale";
+ else if(x===1&&y===1)type="Unchanged";
+ else if(Math.abs(x)===Math.abs(y))type=
+  Math.abs(x)>1?"Uniform scaling":"Uniform scaling";
+ else type="Non-uniform scaling";
+ document.getElementById("type").textContent=type;
+
+ document.getElementById("calculation").innerHTML=
+  "<b>Matrix multiplication</b><br>"+
+  "S = [ "+x.toFixed(1)+" &nbsp; 0 ]<br>"+
+  "&nbsp;&nbsp;&nbsp;&nbsp;[ 0 &nbsp; "+y.toFixed(1)+" ]<br><br>"+
+  "Take point P = (2,2)<br>"+
+  "x' = "+x.toFixed(1)+" × 2 = <b>"+(2*x).toFixed(1)+"</b><br>"+
+  "y' = "+y.toFixed(1)+" × 2 = <b>"+(2*y).toFixed(1)+"</b><br><br>"+
+  "<b>New point P' = ("+(2*x).toFixed(1)+", "+(2*y).toFixed(1)+")</b><br>"+
+  "det(S) = "+x.toFixed(1)+" × "+y.toFixed(1)+" = "+det.toFixed(2)+"<br>"+
+  "New area = 4 × |"+det.toFixed(2)+"| = "+area.toFixed(2);
+ draw();
+}
+function preset(x,y){sx.value=x;sy.value=y;update();}
+sx.addEventListener("input",update);
+sy.addEventListener("input",update);
+window.addEventListener("resize",()=>{setup();update()});
+setup();update();
+</script>
+</body>
+</html>
