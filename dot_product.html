@@ -1,0 +1,162 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dot Product Playground</title>
+<style>
+*{box-sizing:border-box}
+body{
+ margin:0;padding:20px;font-family:Arial;color:#f5f5ff;
+ background:radial-gradient(circle at top,#26365f,#0a1020);
+}
+.container{max-width:900px;margin:auto}
+h1{text-align:center}
+.sub{text-align:center;color:#b9c8e8}
+.card{
+ background:#172442;border:1px solid #394c75;
+ border-radius:18px;padding:18px;margin:16px 0;
+}
+canvas{
+ width:100%;height:350px;background:#0c1730;
+ border-radius:12px;display:block;
+}
+.controls{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+label{display:block;margin:12px 0;color:#cbd8f5}
+input{width:100%;accent-color:#a78bfa}
+button{
+ background:#7758e9;color:white;border:0;
+ border-radius:10px;padding:10px 14px;
+ cursor:pointer;font-weight:bold;margin:4px;
+}
+.presets{display:flex;flex-wrap:wrap;gap:5px}
+.result{
+ text-align:center;font-size:30px;font-weight:bold;
+ color:#80e8cb;padding:10px;
+}
+.small{text-align:center;color:#b9c8e8}
+.formula{
+ text-align:center;font-size:21px;color:#ffdf91;
+ padding:12px;background:#263454;border-radius:12px;
+}
+@media(max-width:600px){.controls{grid-template-columns:1fr}canvas{height:280px}}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>🎮 Dot Product Playground</h1>
+<p class="sub">Rotate the vector and see how two vectors cooperate!</p>
+
+<div class="card">
+<h3>📐 Vector visualization</h3>
+<canvas id="canvas"></canvas>
+<p class="small">A is fixed. B rotates around the origin.</p>
+</div>
+
+<div class="card">
+<h3>🎛️ Change the vectors</h3>
+<div class="controls">
+<div>
+<label>Angle between A and B: <b id="angleVal">45°</b></label>
+<input id="angle" type="range" min="0" max="360" value="45">
+</div>
+<div>
+<label>Length of vector A: <b id="aVal">4</b></label>
+<input id="alen" type="range" min="1" max="8" value="4">
+</div>
+<div>
+<label>Length of vector B: <b id="bVal">4</b></label>
+<input id="blen" type="range" min="1" max="8" value="4">
+</div>
+</div>
+<div class="presets">
+<button onclick="preset(0)">🤝 0°</button>
+<button onclick="preset(90)">📐 90°</button>
+<button onclick="preset(180)">😠 180°</button>
+<button onclick="preset(270)">🔄 270°</button>
+</div>
+</div>
+
+<div class="card">
+<h3>🧮 Live calculation</h3>
+<div class="formula" id="formula"></div>
+<div class="result" id="result"></div>
+<p class="small" id="meaning"></p>
+</div>
+</div>
+<script>
+const c=document.getElementById('canvas');
+const ctx=c.getContext('2d');
+const angle=document.getElementById('angle');
+const alen=document.getElementById('alen');
+const blen=document.getElementById('blen');
+
+function drawArrow(x1,y1,x2,y2,color,label){
+ ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=4;
+ ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+ const a=Math.atan2(y2-y1,x2-x1),s=12;
+ ctx.beginPath();
+ ctx.moveTo(x2,y2);
+ ctx.lineTo(x2-s*Math.cos(a-.5),y2-s*Math.sin(a-.5));
+ ctx.lineTo(x2-s*Math.cos(a+.5),y2-s*Math.sin(a+.5));
+ ctx.closePath();ctx.fill();
+ ctx.font='bold 17px Arial';ctx.fillText(label,x2+8,y2-8);
+}
+function render(){
+ const w=c.clientWidth,h=c.clientHeight;
+ const d=window.devicePixelRatio||1;
+ c.width=w*d;c.height=h*d;
+ ctx.setTransform(d,0,0,d,0,0);
+ const cx=w/2,cy=h/2,scale=Math.min(w,h)*.105;
+ ctx.clearRect(0,0,w,h);
+ // Grid
+ ctx.strokeStyle='#253756';ctx.lineWidth=1;
+ for(let x=cx%scale;x<w;x+=scale){
+  ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,h);ctx.stroke();
+ }
+ for(let y=cy%scale;y<h;y+=scale){
+  ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(w,y);ctx.stroke();
+ }
+ // Axes
+ ctx.strokeStyle='#8395b7';ctx.lineWidth=1.5;
+ ctx.beginPath();ctx.moveTo(0,cy);ctx.lineTo(w,cy);
+ ctx.moveTo(cx,0);ctx.lineTo(cx,h);ctx.stroke();
+ const theta=Number(angle.value)*Math.PI/180;
+ const a=Number(alen.value),b=Number(blen.value);
+ const ax=a*scale,ay=0;
+ const bx=b*Math.cos(theta)*scale;
+ const by=-b*Math.sin(theta)*scale;
+ drawArrow(cx,cy,cx+ax,cy+ay,'#55d9ff','A');
+ drawArrow(cx,cy,cx+bx,cy+by,'#ffcb65','B');
+ // Angle arc
+ ctx.beginPath();ctx.arc(cx,cy,35,0,-theta,theta>Math.PI);
+ ctx.strokeStyle='#b994ff';ctx.lineWidth=2;ctx.stroke();
+ ctx.fillStyle='#d4bdff';ctx.font='14px Arial';
+ ctx.fillText(angle.value+'°',cx+45,cy-15);
+ // Projection of B on A
+ const projection=b*Math.cos(theta)*scale;
+ ctx.setLineDash([5,5]);ctx.strokeStyle='#83e3a5';
+ ctx.beginPath();ctx.moveTo(cx+bx,cy+by);
+ ctx.lineTo(cx+bx,cy);ctx.stroke();ctx.setLineDash([]);
+ ctx.fillStyle='#83e3a5';ctx.fillText('Projection',cx+bx+5,cy+by/2);
+ const dot=a*b*Math.cos(theta);
+ document.getElementById('angleVal').textContent=angle.value+'°';
+ document.getElementById('aVal').textContent=a;
+ document.getElementById('bVal').textContent=b;
+ document.getElementById('formula').textContent=
+  a+' × '+b+' × cos('+angle.value+'°)';
+ document.getElementById('result').textContent='A · B = '+dot.toFixed(2);
+ let msg;
+ if(Math.abs(dot)<.0001)msg='📐 ZERO! Vectors are perpendicular (orthogonal).';
+ else if(dot>0)msg='🤝 POSITIVE! Vectors point generally in the same direction.';
+ else msg='😠 NEGATIVE! Vectors point generally in opposite directions.';
+ document.getElementById('meaning').textContent=msg;
+}
+function preset(v){angle.value=v;render()}
+[angle,alen,blen].forEach(el=>el.addEventListener('input',render));
+window.addEventListener('resize',render);
+render();
+</script>
+</body>
+</html>
