@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Binary Tree Height Visualizer</title>
+<style>
+:root{--bg:#0b1220;--panel:#121e32;--panel2:#17263d;--text:#edf4ff;--muted:#a9bad2;--line:#47617f;--accent:#65d6c4;--yellow:#ffd166;--pink:#ff7c9c;--blue:#75aaff}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(circle at 50% 0%,#1c3150 0,#0b1220 55%);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:18px}
+.wrap{max-width:1050px;margin:auto}
+header{text-align:center;margin:4px 0 18px}
+h1{font-size:clamp(1.55rem,4vw,2.35rem);margin:0 0 6px}
+.sub{color:var(--muted);margin:0}
+.panel{background:rgba(18,30,50,.94);border:1px solid #2b405e;border-radius:18px;padding:16px;margin:14px 0;box-shadow:0 12px 35px #0003}
+.controls{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:end}
+label{display:block;color:var(--muted);font-size:.88rem;margin-bottom:6px}
+input{width:100%;min-width:0;background:#0b1628;border:1px solid #405776;border-radius:11px;padding:12px;color:var(--text);font-size:16px}
+button{border:0;border-radius:11px;padding:12px 15px;font-weight:700;font-size:14px;cursor:pointer;min-height:44px;background:var(--accent);color:#06251f}
+button.secondary{background:#2a3d59;color:var(--text);border:1px solid #49617e}
+button:disabled{opacity:.4;cursor:not-allowed}
+.presets{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.presets button{font-size:12px;padding:9px 12px;min-height:38px}
+.note{font-size:.88rem;color:var(--muted);margin:10px 0 0;line-height:1.5}
+.error{color:#ff9bad;min-height:1.3em;font-size:.9rem;margin-top:8px}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.stat{background:#0c192b;border:1px solid #2b405e;border-radius:14px;padding:12px;text-align:center}
+.stat strong{display:block;font-size:clamp(1.35rem,4vw,2rem);color:var(--accent)}
+.stat span{color:var(--muted);font-size:.8rem}
+.tree-head{display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+.tree-head h2,.panel h2{font-size:1.08rem;margin:0}
+.legend{display:flex;gap:12px;flex-wrap:wrap;color:var(--muted);font-size:.78rem}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}
+svg{width:100%;height:auto;display:block;overflow:visible;min-height:210px}
+.edge{stroke:var(--line);stroke-width:2.5}
+.node circle{fill:#213958;stroke:#83a9d7;stroke-width:2.5;transition:all .2s}
+.node text{fill:#fff;font-size:14px;font-weight:800;text-anchor:middle;dominant-baseline:middle;pointer-events:none}
+.node.visited circle{fill:#245b56;stroke:var(--accent);stroke-width:3}
+.node.active circle{fill:#7a5420;stroke:var(--yellow);stroke-width:4;filter:drop-shadow(0 0 7px #ffd16688)}
+.node.done circle{fill:#4a315a;stroke:#d7a5ff}
+.node.null circle{fill:#293449;stroke:#65758e;stroke-dasharray:4 3}
+.legend .a{background:var(--yellow)}.legend .v{background:var(--accent)}.legend .d{background:#d7a5ff}
+.process{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.box{background:#0c192b;border:1px solid #2b405e;border-radius:13px;padding:13px;min-width:0}
+.box h3{font-size:.9rem;color:var(--muted);margin:0 0 8px}
+.big{font-size:1.6rem;font-weight:800;color:var(--yellow)}
+#explain{line-height:1.55;min-height:48px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.actions button{flex:1}
+.code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;background:#081322;border:1px solid #2b405e;border-radius:12px;padding:14px;line-height:1.7;overflow:auto;font-size:.85rem}
+.code .hl{color:var(--yellow);font-weight:800}
+.footer{text-align:center;color:var(--muted);font-size:.78rem;padding:10px}
+@media(max-width:650px){
+ body{padding:10px}.panel{padding:13px;border-radius:15px}
+ .controls{grid-template-columns:1fr 1fr}.controls .field{grid-column:1/-1}
+ .controls button{width:100%}.stats{gap:7px}.stat{padding:10px 5px}
+ .process{grid-template-columns:1fr}
+ svg{min-height:180px}
+}
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+<header>
+  <h1>🌳 Binary Tree Height Visualizer</h1>
+  <p class="sub">Explore recursion, left subtree, right subtree and the longest path.</p>
+</header>
+
+<section class="panel">
+  <div class="controls">
+    <div class="field">
+      <label for="treeInput">Enter level-order values (use # for an empty child)</label>
+      <input id="treeInput" value="A,B,C,D,E,#,F" aria-describedby="inputHelp">
+    </div>
+    <button id="buildBtn">Build Tree</button>
+    <button class="secondary" id="randomBtn">🎲 Random</button>
+  </div>
+  <p class="note" id="inputHelp">Example: A,B,C,D,E,#,F &nbsp; • &nbsp; # means no node. Maximum 31 positions (5 levels).</p>
+  <div class="presets">
+    <button class="secondary" data-tree="A,B,C,D,E,#,F">Balanced</button>
+    <button class="secondary" data-tree="1,2,#,3,#,4">Skewed left</button>
+    <button class="secondary" data-tree="1,#,2,#,3,#,4">Skewed right</button>
+    <button class="secondary" data-tree="1,2,3,#,4,5,6">Unbalanced</button>
+    <button class="secondary" data-tree="1">Single node</button>
+  </div>
+  <div class="error" id="error" role="alert"></div>
+</section>
+
+<section class="panel">
+  <div class="tree-head">
+    <h2>🧩 Your binary tree</h2>
+    <div class="legend">
+      <span><i class="dot a"></i>Current node</span>
+      <span><i class="dot v"></i>Visited</span>
+      <span><i class="dot d"></i>Completed</span>
+    </div>
+  </div>
+  <svg id="treeSvg" viewBox="0 0 760 390" role="img" aria-label="Binary tree diagram"></svg>
+  <div class="stats">
+    <div class="stat"><strong id="heightNodes">—</strong><span>Height (nodes)</span></div>
+    <div class="stat"><strong id="heightEdges">—</strong><span>Height (edges)</span></div>
+    <div class="stat"><strong id="nodeCount">—</strong><span>Total nodes</span></div>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>🧠 Watch the recursive algorithm</h2>
+  <div class="process" style="margin-top:12px">
+    <div class="box">
+      <h3>Current step</h3>
+      <div class="big" id="stepCount">Ready</div>
+      <div id="explain" aria-live="polite">Press “Next Step” to start exploring the tree using postorder recursion.</div>
+    </div>
+    <div class="box">
+      <h3>Returned height</h3>
+      <div class="big" id="returnValue">—</div>
+      <div class="note" id="returnExplain">A node returns 1 + max(left height, right height).</div>
+    </div>
+  </div>
+  <div class="actions">
+    <button id="nextBtn">▶ Next Step</button>
+    <button class="secondary" id="autoBtn">⚡ Auto Play</button>
+    <button class="secondary" id="resetBtn">↺ Reset</button>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>💻 Recursive logic</h2>
+  <div class="code">
+    <span class="hl">height</span>(node):<br>
+    &nbsp;&nbsp;if node == NULL:<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;return 0<br>
+    &nbsp;&nbsp;leftHeight = height(node.left)<br>
+    &nbsp;&nbsp;rightHeight = height(node.right)<br>
+    &nbsp;&nbsp;return 1 + max(leftHeight, rightHeight)
+  </div>
+  <p class="note"><b>Why max?</b> Height follows the longest root-to-leaf path, not the total number of nodes in the tree.</p>
+</section>
+<div class="footer">Tip: Try a skewed tree and compare its height with a balanced tree containing the same number of nodes.</div>
+</div>
+
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+let root = null, nodes = [], steps = [], stepIndex = 0, timer = null;
+
+function parseTree(values){
+  const vals = values.split(",").map(v=>v.trim());
+  if(vals.length > 31) throw new Error("Please use at most 31 positions (5 levels).");
+  if(!vals.length || vals[0]==="" || vals[0]==="#") {
+    if(vals.some(v=>v && v!=="#")) throw new Error("A tree must start with a root node.");
+    return null;
+  }
+  const arr = vals.map(v => v==="" ? "#" : v);
+  for(let i=1;i<arr.length;i++){
+    if(arr[i]!=="#" && arr[i]!=="" && arr[Math.floor((i-1)/2)]==="#")
+      throw new Error("A child cannot exist if its parent is empty. Check position " + (i+1) + ".");
+  }
+  const make = i => {
+    if(i>=arr.length || arr[i]==="#") return null;
+    return {value:arr[i], index:i, left:make(2*i+1), right:make(2*i+2), height:0};
+  };
+  return make(0);
+}
+function collect(n, depth=0, out=[]){
+  if(!n) return out;
+  out.push({node:n,depth});
+  collect(n.left,depth+1,out); collect(n.right,depth+1,out);
+  return out;
+}
+function calculate(n){
+  if(!n) return 0;
+  const lh=calculate(n.left), rh=calculate(n.right);
+  n.height=1+Math.max(lh,rh);
+  return n.height;
+}
+function makeSteps(n){
+  const list=[];
+  function visit(node){
+    if(!node){list.push({type:"null"});return 0;}
+    list.push({type:"enter",node});
+    const l=visit(node.left), r=visit(node.right);
+    const h=1+Math.max(l,r);
+    list.push({type:"return",node,left:l,right:r,height:h});
+    return h;
+  }
+  visit(n); return list;
+}
+function draw(){
+  const svg=$("treeSvg"); svg.innerHTML="";
+  if(!root){svg.setAttribute("viewBox","0 0 760 180");svg.innerHTML='<text x="380" y="90" fill="#a9bad2" text-anchor="middle" font-size="18">Empty tree · height = 0</text>';return;}
+  const list=collect(root), maxDepth=Math.max(...list.map(x=>x.depth));
+  const height=Math.max(240,(maxDepth+1)*86+45);
+  svg.setAttribute("viewBox",`0 0 760 ${height}`);
+  const pos=new Map();
+  list.forEach(({node,depth})=>{
+    const slot=node.index-(Math.pow(2,depth)-1);
+    const count=Math.pow(2,depth);
+    const x=760*(slot+0.5)/count, y=43+depth*86;
+    pos.set(node,{x,y});
+  });
+  list.forEach(({node})=>{
+    const p=pos.get(node);
+    [node.left,node.right].forEach(child=>{
+      if(child){const c=pos.get(child);const line=document.createElementNS("http://www.w3.org/2000/svg","line");
+        line.setAttribute("x1",p.x);line.setAttribute("y1",p.y+19);line.setAttribute("x2",c.x);line.setAttribute("y2",c.y-19);line.setAttribute("class","edge");svg.appendChild(line);}
+    });
+  });
+  list.forEach(({node})=>{
+    const p=pos.get(node), g=document.createElementNS("http://www.w3.org/2000/svg","g");
+    g.setAttribute("class","node");g.setAttribute("id","node-"+node.index);
+    const c=document.createElementNS("http://www.w3.org/2000/svg","circle");
+    c.setAttribute("cx",p.x);c.setAttribute("cy",p.y);c.setAttribute("r",20);g.appendChild(c);
+    const t=document.createElementNS("http://www.w3.org/2000/svg","text");
+    t.setAttribute("x",p.x);t.setAttribute("y",p.y+1);
+    const label=String(node.value);t.textContent=label.length>4?label.slice(0,3)+"…":label;g.appendChild(t);
+    const h=document.createElementNS("http://www.w3.org/2000/svg","text");
+    h.setAttribute("x",p.x);h.setAttribute("y",p.y+34);h.setAttribute("fill","#a9bad2");h.setAttribute("font-size","10");h.setAttribute("text-anchor","middle");h.textContent="h="+node.height;g.appendChild(h);
+    svg.appendChild(g);
+  });
+}
+function setStats(){
+ const h=root?root.height:0;
+ $("heightNodes").textContent=h;
+ $("heightEdges").textContent=root? h-1:0;
+ $("nodeCount").textContent=nodes.length;
+}
+function resetVisual(){
+ clearInterval(timer);timer=null;$("autoBtn").textContent="⚡ Auto Play";
+ stepIndex=0;
+ document.querySelectorAll(".node").forEach(n=>n.classList.remove("active","visited","done"));
+ $("stepCount").textContent="Ready";$("returnValue").textContent="—";
+ $("explain").textContent="Press “Next Step” to start exploring the tree using postorder recursion.";
+ $("returnExplain").textContent="A node returns 1 + max(left height, right height).";
+ $("nextBtn").disabled=!root;
+}
+function build(values){
+ try{
+  $("error").textContent="";
+  root=parseTree(values);
+  nodes=collect(root).map(x=>x.node);
+  calculate(root);steps=makeSteps(root);
+  draw();setStats();resetVisual();
+  if(!root){$("nextBtn").disabled=true;$("stepCount").textContent="Empty tree";$("explain").textContent="NULL returns 0. Therefore, the height of an empty tree is 0.";}
+ }catch(e){$("error").textContent="⚠ "+e.message;}
+}
+function doStep(){
+ if(stepIndex>=steps.length){clearInterval(timer);timer=null;$("autoBtn").textContent="⚡ Auto Play";return;}
+ const s=steps[stepIndex++];
+ $("stepCount").textContent=`Step ${stepIndex} / ${steps.length}`;
+ if(s.type==="null"){
+   $("returnValue").textContent="0";
+   $("explain").textContent="We reached NULL (an empty child). The base case returns 0.";
+   $("returnExplain").textContent="height(NULL) = 0";
+ }else if(s.type==="enter"){
+   const el=$("node-"+s.node.index);
+   if(el){el.classList.add("active");}
+   $("returnValue").textContent="…";
+   $("explain").textContent=`Visit node ${s.node.value}. First calculate the height of its left subtree, then its right subtree.`;
+   $("returnExplain").textContent="Recursive calls are moving down towards the leaf nodes.";
+ }else{
+   const el=$("node-"+s.node.index);
+   if(el){el.classList.remove("active");el.classList.add("done");}
+   $("returnValue").textContent=s.height;
+   $("explain").textContent=`Node ${s.node.value}: 1 + max(${s.left}, ${s.right}) = ${s.height}. Return ${s.height} to its parent.`;
+   $("returnExplain").textContent=`Left height = ${s.left}, right height = ${s.right}. Choose the larger one and add 1.`;
+ }
+ if(stepIndex>=steps.length){
+   $("stepCount").textContent="Completed ✓";
+   $("explain").textContent=`Calculation complete! The longest root-to-leaf path contains ${root.height} node(s).`;
+   $("returnValue").textContent=root.height;
+   $("returnExplain").textContent=`Final answer: height = ${root.height} nodes (${Math.max(0,root.height-1)} edges).`;
+   $("nextBtn").disabled=true;
+   clearInterval(timer);timer=null;$("autoBtn").textContent="⚡ Auto Play";
+ }
+}
+$("buildBtn").addEventListener("click",()=>build($("treeInput").value));
+$("treeInput").addEventListener("keydown",e=>{if(e.key==="Enter")build($("treeInput").value);});
+$("randomBtn").addEventListener("click",()=>{
+ const examples=["R,A,B,C,#,D,E","1,2,3,4,5,#,7","P,Q,#,R,#,S","10,20,30,#,25,35,40"];
+ const v=examples[Math.floor(Math.random()*examples.length)];
+ $("treeInput").value=v;build(v);
+});
+document.querySelectorAll("[data-tree]").forEach(b=>b.addEventListener("click",()=>{
+ $("treeInput").value=b.dataset.tree;build(b.dataset.tree);
+}));
+$("nextBtn").addEventListener("click",doStep);
+$("autoBtn").addEventListener("click",()=>{
+ if(timer){clearInterval(timer);timer=null;$("autoBtn").textContent="⚡ Auto Play";return;}
+ if(stepIndex>=steps.length)resetVisual();
+ $("autoBtn").textContent="⏸ Pause";
+ timer=setInterval(doStep,850);
+});
+$("resetBtn").addEventListener("click",resetVisual);
+build($("treeInput").value);
+})();
+</script>
+</body>
+</html>
